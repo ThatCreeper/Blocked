@@ -516,7 +516,7 @@ void EnactMove(bool a, bool b) {
 	SetSoundVolume(GetSound(SND_FIRE), 0.2f);
 }
 
-float AnimLerp(float from, float to) {
+int AnimLerp(int from, int to) {
 	return SInterp(from, to, s.at, AnimationTime());
 }
 

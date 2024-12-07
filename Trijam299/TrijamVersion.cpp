@@ -28,7 +28,7 @@ static void AddParticles(int sx, int sy) {
 
 static bool GameOver() {
 	StopSound(SND_MUSIC);
-	while (true) {
+	while (!WindowShouldClose()) {
 		BeginDrawing();
 		ClearBackground(BLACK);
 		DrawText("You Won!", (800 - MeasureText("You Won!", 60)) / 2, 100, 60, WHITE);
@@ -324,13 +324,14 @@ void LoadMap(const char *m /* map to load */) {
 	s.m.n = m;
 }
 
-void LoadNextMap() {
-	if (++s.M >= sizeof(maps) / sizeof(maps[0])) {
-		GameOver();
-	}
-	LoadMap(maps[s.M]);
+bool /* game over */ LoadNextMap() {
 	PlaySound(SND_WIN);
 	SetSoundVolume(GetSound(SND_WIN), 2);
+	if (++s.M >= sizeof(maps) / sizeof(maps[0])) {
+		return true;
+	}
+	LoadMap(maps[s.M]);
+	return false;
 }
 
 void ReloadMap() {
@@ -566,8 +567,12 @@ bool TrijamRunGame() {
 				PlayAnimation(ANIM_FIRE);
 			}
 
-			if (s.a.w && s.b.w)
-				LoadNextMap();
+			if (s.a.w && s.b.w) {
+				if (LoadNextMap()) {
+					restart = GameOver();
+					goto END;
+				}
+			}
 
 			for (Box &b : s.m.b) {
 				b.lx = b.x;

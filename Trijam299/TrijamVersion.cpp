@@ -330,6 +330,7 @@ void LoadNextMap() {
 	}
 	LoadMap(maps[s.M]);
 	PlaySound(SND_WIN);
+	SetSoundVolume(GetSound(SND_WIN), 2);
 }
 
 void ReloadMap() {
@@ -511,6 +512,7 @@ void EnactMove(bool a, bool b) {
 	s.m.t.push_back(t);
 	PlayAnimation(ANIM_TURN);
 	PlaySound(SND_FIRE);
+	SetSoundVolume(GetSound(SND_FIRE), 0.2f);
 }
 
 float AnimLerp(float from, float to) {

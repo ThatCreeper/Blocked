@@ -189,7 +189,7 @@ struct Textures {
 		box = LoadTexture("Box.png");
 		closed = LoadTexture("Closed_Gate.png");
 		death = LoadTexture("Death.png");
-		hole = LoadTexture("Hole.png");
+		hole = LoadTexture("hole.png");
 		open = LoadTexture("OpenGate.png");
 		p1 = LoadTexture("P1.png");
 		p2 = LoadTexture("P2.png");
@@ -655,7 +655,7 @@ bool TrijamRunGame() {
 					DrawTexture(s.t.wallt, x * 16, y * 16, WHITE);
 					break;
 				case T_FIRE:
-					DrawTexture(s.t.hole, x * 16, y * 16, WHITE);
+					DrawTexture(s.t.death, x * 16, y * 16, WHITE);
 				}
 			}
 		}

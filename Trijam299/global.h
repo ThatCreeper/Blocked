@@ -11,3 +11,4 @@
 #include "gfx.h"
 #include "helpers.h"
 #include "globstate.h"
+#include "flux.h"

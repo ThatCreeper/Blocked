@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="flux.cpp" />
     <ClCompile Include="gfx.cpp" />
     <ClCompile Include="globstate.cpp" />
     <ClCompile Include="sound.cpp" />
@@ -139,6 +140,7 @@
     <ClCompile Include="TrijamVersion.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="flux.h" />
     <ClInclude Include="gfx.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="globstate.h" />

@@ -2,6 +2,8 @@
 #include <unordered_set>
 #include <string>
 
+static float fade = 1;
+
 static struct Particle {
 	float r;
 	int x;
@@ -251,6 +253,8 @@ void LoadMap(const char *m /* map to load */) {
 	s.b.w = false;
 	s.m.M = 0;
 	PlayAnimation(ANIM_OPEN);
+	fade = 1;
+	flux::to(0.4f)->with(&fade, 0);
 	int idx = 0;
 	while (idx < s.m.w * s.m.h && *m) {
 		int x = idx % s.m.w;
@@ -549,6 +553,7 @@ bool TrijamRunGame() {
 	//DoFadeOutAnimation();
 
 	while (!WindowShouldClose()) {
+		flux::update(GetFrameTime());
 		PlaySound(SND_MUSIC);
 
 		if (s.at >= AnimationTime()) {
@@ -623,8 +628,8 @@ bool TrijamRunGame() {
 
 		BeginMode2D(c);
 
-		for (int y = -5; y < s.m.h + 5; y++) {
-			for (int x = -5; x < s.m.w + 5; x++) {
+		for (int y = -2; y < s.m.h + 2; y++) {
+			for (int x = -2; x < s.m.w + 2; x++) {
 				if (x >= 0 && x < s.m.w
 					&& y >= 0 && y < s.m.h)
 					continue;
@@ -691,9 +696,10 @@ bool TrijamRunGame() {
 
 		EndMode2D();
 
-		if (AnimationPlaying(ANIM_OPEN)) {
+		/*if (AnimationPlaying(ANIM_OPEN)) {
 			DrawCircle(SCRWID / 2, SCRHEI / 2, 800 * (1 - (s.at / AnimationTime())), BLACK);
-		}
+		}*/
+		DrawCircle(SCRWID / 2, SCRHEI / 2, 800 * fade, BLACK);
 
 		{
 			const char *t = TextFormat("%d moves this map\n%d moves in total", s.m.M, s.tM);

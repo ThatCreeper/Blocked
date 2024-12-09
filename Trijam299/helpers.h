@@ -62,7 +62,7 @@ inline float Dist(float x, float y) {
 
 inline float Lerp(float from, float to, float x, float max) {
 	float t = x / max;
-	return from * (1 - t) + to * t;
+	return from + (to - from) * t;
 }
 
 // X from 0 to 1
@@ -76,7 +76,5 @@ inline float SInterp(float x, float max) {
 
 inline float SInterp(float from, float to, float x, float max) {
 	float i = SInterp(x, max);
-	from *= 1 - i;
-	to   *= i;
-	return from + to;
+	return from + (to - from) * i;
 }

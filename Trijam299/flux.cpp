@@ -29,6 +29,11 @@ flux::TweenPtr flux::to(float duration)
 	return globalGroup.to(duration);
 }
 
+float flux::totalremainingtime()
+{
+	return globalGroup.totalremainingtime();
+}
+
 flux::Group flux::group()
 {
 	return Group();
@@ -95,11 +100,21 @@ void flux::Tween::stop()
 	ended_ = true;
 }
 
+flux::TweenPtr flux::Tween::runningflag(int *flag)
+{
+	runningFlag_ = flag;
+
+	return shared_from_this();
+}
+
 bool flux::Tween::update_(float deltaTime)
 {
 	if (ended_)
 		return false;
 	if (parent_ && parent_->ended_)
+		return false;
+
+	if (changers_.empty())
 		return false;
 
 	time_ += deltaTime;
@@ -117,6 +132,8 @@ bool flux::Tween::update_(float deltaTime)
 			changer.initialValue = *changer.toChange;
 		for (const auto &fn : startfns_)
 			fn();
+		if (runningFlag_)
+			*runningFlag_ += 1;
 	}
 
 	if (time >= 1) {
@@ -132,17 +149,46 @@ bool flux::Tween::update_(float deltaTime)
 	for (const auto &fn : updatefns_)
 		fn(deltaTime);
 
-	if (!ret)
+	if (!ret) {
 		for (const auto &fn : endfns_)
 			fn();
+		if (runningFlag_)
+			*runningFlag_ -= 1;
+	}
 
 	return ret;
 }
 
+float flux::Tween::timeUntilEnd_()
+{
+	return duration_ + delay_ + forcedelay_ - time_;
+}
+
 void flux::Group::update(float deltatime)
 {
-	auto it = tweens_.begin();
+	// Remove duplicates
+	// Todo: this might not be necessary.
+	// It's not too much code, though, so I'm keeping it for now.
+	for (int i = tweens_.size() - 1; i >= 0; i--) {
+		for (int j = 0; j < i; j++) {
+			for (const Tween::Changer_ &ichanger : tweens_[i]->changers_) {
+				auto &jchangers = tweens_[j]->changers_;
+				auto it = jchangers.begin();
+				while (it != jchangers.end()) {
+					if (ichanger.toChange == it->toChange) {
+						it = jchangers.erase(it);
+					}
+					else {
+						it++;
+					}
+				}
+			}
+		}
+	}
 
+	// Actually Process
+	auto it = tweens_.begin();
+	
 	while (it != tweens_.end()) {
 		if ((*it)->update_(deltatime))
 			it++;
@@ -159,4 +205,15 @@ flux::TweenPtr flux::Group::to(float duration)
 	tweens_.push_back(tween);
 	
 	return tween;
+}
+
+float flux::Group::totalremainingtime()
+{
+	float remainingtime = 0;
+	for (const auto &tween : tweens_) {
+		float tweentime = tween->timeUntilEnd_();
+		if (tweentime > remainingtime)
+			remainingtime = tweentime;
+	}
+	return remainingtime;
 }

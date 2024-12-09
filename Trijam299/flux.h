@@ -40,12 +40,22 @@ namespace flux {
 	 */
 	TweenPtr to(float duration);
 
+	/* Returns the total remaining time of all tweens that live
+	 * on the global Group.
+	 * 
+	 * See also: Group::totalremainingtime()
+	 */
+	float totalremainingtime();
+
 	class Tween : public std::enable_shared_from_this<Tween> {
 	public:
 		/* Example:
 		 * flux::to(4)
-		 *     .with(&ball.x, 200)
-		 *     .with(&ball.y, 300);
+		 *     ->with(&ball.x, 200)
+		 *     ->with(&ball.y, 300);
+		 * 
+		 * Warning! toUpdate MUST live as long as
+		 * the tween.
 		 */
 		TweenPtr with(float *toUpdate, float target);
 
@@ -95,10 +105,19 @@ namespace flux {
 		 */
 		void stop();
 
+		/* New in flux.h!
+		 * Increments the flag during onstart and
+		 * decrements the flag during oncomplete.
+		 * This can also be accomplished using
+		 * onstart and oncomplete.
+		 */
+		TweenPtr runningflag(int *flag);
+
 	private:
 		Tween() = default;
 
 		bool update_(float deltaTime); // returns "should continue"
+		float timeUntilEnd_();
 
 		struct Changer_ {
 			float *toChange;
@@ -113,6 +132,7 @@ namespace flux {
 		float time_ = 0;
 		bool ended_ = false;
 		bool started_ = false;
+		int *runningFlag_ = nullptr;
 		std::vector<std::function<void()>> startfns_ = {};
 		std::vector<std::function<void(float)>> updatefns_ = {};
 		std::vector<std::function<void()>> endfns_ = {};
@@ -166,6 +186,12 @@ namespace flux {
 
 		/* See also: flux::to() */
 		TweenPtr to(float duration);
+		
+		/* New in flux.h!
+		 * Returns the total time remaining for all tweens
+		 * owned by the group.
+		 */
+		float totalremainingtime();
 
 		Group() = default;
 		~Group() = default;

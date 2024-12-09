@@ -65,6 +65,13 @@ inline float Lerp(float from, float to, float x, float max) {
 	return from + (to - from) * t;
 }
 
+inline float LerpDistRound(float from, float to, float x, float max, float dist) {
+	float l = Lerp(from, to, x, max);
+	if (abs(l - to) < dist)
+		return to;
+	return l;
+}
+
 // X from 0 to 1
 inline float SInterp(float x) {
 	return (1 - cosf(PI * x)) / 2;

@@ -98,8 +98,8 @@ enum Tile {
 struct Box {
 	int x;
 	int y;
-	int lx;
-	int ly;
+	float rendX;
+	float rendY;
 	int id;
 };
 
@@ -127,29 +127,7 @@ struct Turn {
 	int fY;
 	int tY;
 	int id;
-	int lX;
-	int lY;
 };
-
-enum Animation {
-	ANIM_FIRE,
-	ANIM_TURN,
-	ANIM_OPEN,
-	ANIM_CLOSE
-};
-
-float AnimationTime(Animation a) {
-	switch (a) {
-	case ANIM_FIRE:
-		return 0.3f;
-	case ANIM_TURN:
-		return 0.15f;
-	case ANIM_OPEN:
-		return 0.4f;
-	case ANIM_CLOSE:
-		return 0.4f;
-	}
-}
 
 struct Map {
 	int M = 0; // moves;
@@ -166,9 +144,10 @@ struct Map {
 struct Player {
 	int x;
 	int y;
-	int lx;
-	int ly;
+	float rendX;
+	float rendY;
 	bool w; // won
+	float scale = 1;
 };
 
 struct Textures {
@@ -225,19 +204,9 @@ struct State {
 	Map m;
 	Player a;
 	Player b;
-	Animation A = ANIM_TURN;
-	float at = 100;
+	bool preventMoving;
 	Textures t;
 } s;
-
-void PlayAnimation(Animation a) {
-	s.A = a;
-	s.at = 0;
-}
-
-float AnimationTime() {
-	return AnimationTime(s.A);
-}
 
 void LoadMap(const char *m /* map to load */) {
 	if (s.m.m)
@@ -252,7 +221,6 @@ void LoadMap(const char *m /* map to load */) {
 	s.a.w = false;
 	s.b.w = false;
 	s.m.M = 0;
-	PlayAnimation(ANIM_OPEN);
 	fade = 1;
 	flux::to(0.4f)->with(&fade, 0);
 	int idx = 0;
@@ -266,15 +234,15 @@ void LoadMap(const char *m /* map to load */) {
 		case 'a':
 			s.a.x = x;
 			s.a.y = y;
-			s.a.lx = x;
-			s.a.ly = y;
+			s.a.rendX = x;
+			s.a.rendY = y;
 			s.m.m[idx] = T_AIR;
 			break;
 		case 'b':
 			s.b.x = x;
 			s.b.y = y;
-			s.b.lx = x;
-			s.b.ly = y;
+			s.b.rendX = x;
+			s.b.rendY = y;
 			s.m.m[idx] = T_AIR;
 			break;
 		case ' ':
@@ -291,7 +259,7 @@ void LoadMap(const char *m /* map to load */) {
 			break;
 		case '.':
 			s.m.m[idx] = T_AIR;
-			s.m.b.push_back(Box{ .x = x, .y = y, .lx = x, .ly = y, .id = (int)s.m.b.size() });
+			s.m.b.push_back(Box{ .x = x, .y = y, .rendX = (float)x, .rendY = (float)y, .id = (int)s.m.b.size() });
 			break;
 		case '_':
 			s.m.m[idx] = T_AIR;
@@ -376,14 +344,10 @@ void Undo() {
 			if (T.id == 0) {
 				s.a.x = T.fX;
 				s.a.y = T.fY;
-				s.a.lx = T.lX;
-				s.a.ly = T.lY;
 			}
 			else {
 				s.b.x = T.fX;
 				s.b.y = T.fY;
-				s.b.lx = T.lX;
-				s.b.ly = T.lY;
 			}
 		}
 	}
@@ -393,9 +357,6 @@ template <class T>
 bool /* success */ TryMove(T &m, Player &o, int x, int y) {
 	//if (m.w)
 	//	return false;
-
-	m.lx = m.x;
-	m.ly = m.y;
 
 	if (m.x + x < 0 || m.y + y < 0)
 		return false;
@@ -443,14 +404,13 @@ bool /* success */ TryMove(T &m, Player &o, int x, int y) {
 
 	m.x += x;
 	m.y += y;
+
 	return true;
 }
 
 bool /* success */ TryMoveA(int x, int y) {
 	int fX = s.a.x;
 	int fY = s.a.y;
-	int lX = s.a.lx;
-	int lY = s.a.ly;
 	if (TryMove<Player>(s.a, s.b, x, y)) {
 		Turn t;
 		t.type = TRN_PLAYER;
@@ -458,8 +418,6 @@ bool /* success */ TryMoveA(int x, int y) {
 		t.fY = fY;
 		t.tX = s.a.x;
 		t.tY = s.a.y;
-		t.lX = lX;
-		t.lY = lY;
 		t.id = 0;
 		s.m.t.push_back(t);
 		return true;
@@ -470,8 +428,6 @@ bool /* success */ TryMoveA(int x, int y) {
 bool /* success */ TryMoveB(int x, int y) {
 	int fX = s.b.x;
 	int fY = s.b.y;
-	int lX = s.b.lx;
-	int lY = s.b.ly;
 	if (TryMove<Player>(s.b, s.a, x, y)) {
 		Turn t;
 		t.type = TRN_PLAYER;
@@ -479,8 +435,6 @@ bool /* success */ TryMoveB(int x, int y) {
 		t.fY = fY;
 		t.tX = s.b.x;
 		t.tY = s.b.y;
-		t.lX = lX;
-		t.lY = lY;
 		t.id = 1;
 		s.m.t.push_back(t);
 		return true;
@@ -494,10 +448,6 @@ bool AOverlaps(Tile t) {
 
 bool BOverlaps(Tile t) {
 	return s.m.m[s.b.y * s.m.w + s.b.x] == t;
-}
-
-bool AnimationPlaying(Animation a) {
-	return s.A == a && s.at < AnimationTime();
 }
 
 void EnactMove(bool a, bool b) {
@@ -515,31 +465,19 @@ void EnactMove(bool a, bool b) {
 	t.type = TRN_LABEL;
 	t.id = i;
 	s.m.t.push_back(t);
-	PlayAnimation(ANIM_TURN);
 	PlaySound(SND_FIRE);
 	SetSoundVolume(GetSound(SND_FIRE), 0.2f);
 }
 
-int AnimLerp(int from, int to) {
-	return SInterp(from, to, s.at, AnimationTime());
+inline float LerpPixelRound(float from, float to, float x, float max) {
+	return LerpDistRound(from, to, x, max, 1.f / 32.f);
 }
 
 void DrawPlayer(Player &p, Texture2D c, bool onFire) {
-	if (AnimationPlaying(ANIM_FIRE)) {
-		float S = 1;
-
-		if (onFire)
-			S = 1 - (s.at / AnimationTime());
-
-		float o = (16 - 16 * S) / 2;
-		DrawTextureEx(c, Vector2{ .x = p.x * 16 + o, .y = p.y * 16 + o }, 0, S, WHITE);
-	}
-	else if (AnimationPlaying(ANIM_TURN)) {
-		DrawTexture(c, AnimLerp(p.lx * 16, p.x * 16), AnimLerp(p.ly * 16, p.y * 16), WHITE);
-	}
-	else {
-		DrawTexture(c, p.x * 16, p.y * 16, WHITE);
-	}
+	p.rendX = LerpPixelRound(p.rendX, p.x, GetFrameTime(), 0.08);
+	p.rendY = LerpPixelRound(p.rendY, p.y, GetFrameTime(), 0.08);
+	float o = (16 - 16 * p.scale) / 2;
+	DrawTextureEx(c, Vector2{ .x = p.rendX * 16 + o, .y = p.rendY * 16 + o }, 0, p.scale, WHITE);
 }
 
 bool TrijamRunGame() {
@@ -556,7 +494,7 @@ bool TrijamRunGame() {
 		flux::update(GetFrameTime());
 		PlaySound(SND_MUSIC);
 
-		if (s.at >= AnimationTime()) {
+		if (!s.preventMoving) {
 			if (IsKeyPressed(KEY_R))
 				ReloadMap();
 			if (IsKeyPressed(KEY_U))
@@ -565,11 +503,17 @@ bool TrijamRunGame() {
 			s.a.w = AOverlaps(T_GOALA);
 			s.b.w = BOverlaps(T_GOALB);
 
-			if (AOverlaps(T_FIRE)) {
-				PlayAnimation(ANIM_FIRE);
-			}
-			if (BOverlaps(T_FIRE)) {
-				PlayAnimation(ANIM_FIRE);
+			if (AOverlaps(T_FIRE) || BOverlaps(T_FIRE)) {
+				float *scale = AOverlaps(T_FIRE) ? &s.a.scale : &s.b.scale;
+				s.preventMoving = true;
+				flux::to(0.4f)
+					->with(scale, 0)
+					->delay(flux::totalremainingtime())
+					->oncomplete([=] {
+					s.preventMoving = false;
+					Undo();
+					*scale = 1;
+						});
 			}
 
 			if (s.a.w && s.b.w) {
@@ -577,11 +521,6 @@ bool TrijamRunGame() {
 					restart = GameOver();
 					goto END;
 				}
-			}
-
-			for (Box &b : s.m.b) {
-				b.lx = b.x;
-				b.ly = b.y;
 			}
 
 			if (IsKeyPressed(KEY_UP)) {
@@ -595,16 +534,6 @@ bool TrijamRunGame() {
 			}
 			if (IsKeyPressed(KEY_RIGHT)) {
 				EnactMove(TryMoveA(1, 0), TryMoveB(-1, 0));
-			}
-
-		}
-		else {
-			s.at += GetFrameTime();
-
-			if (s.at >= AnimationTime()) {
-				// animation just finished
-				if (s.A == ANIM_FIRE)
-					Undo();
 			}
 		}
 
@@ -674,15 +603,9 @@ bool TrijamRunGame() {
 			DrawTexture(s.t.hole, B.x * 16, B.y * 16, WHITE);
 		}
 		for (Box &b : s.m.b) {
-			if (AnimationPlaying(ANIM_TURN)) {
-				DrawTexture(
-					s.t.box,
-					AnimLerp(b.lx * 16, b.x * 16),
-					AnimLerp(b.ly * 16, b.y * 16), WHITE);
-			}
-			else {
-				DrawTexture(s.t.box, b.x * 16, b.y * 16, WHITE);
-			}
+			b.rendX = LerpPixelRound(b.rendX, b.x, GetFrameTime(), 0.08);
+			b.rendY = LerpPixelRound(b.rendY, b.y, GetFrameTime(), 0.08);
+			DrawTexture(s.t.box, b.rendX * 16, b.rendY * 16, WHITE);
 		}
 
 		DrawPlayer(s.a, s.t.p1, AOverlaps(T_FIRE));

@@ -152,6 +152,18 @@ struct Player {
 	float scale = 1;
 };
 
+struct Shaders {
+	Shader opaque;
+
+	void Load() {
+		opaque = LoadShader(nullptr, "opaqueonly.fs");
+	}
+
+	void Unload() {
+		UnloadShader(opaque);
+	}
+};
+
 struct Textures {
 	Texture2D bg;
 	Texture2D box;
@@ -166,6 +178,7 @@ struct Textures {
 	Texture2D wallt;
 	Texture2D p1f;
 	Texture2D p2f;
+	Texture2D flagMask;
 
 	void Load() {
 		bg = LoadTexture("Background.png");
@@ -181,6 +194,7 @@ struct Textures {
 		wallt = LoadTexture("Wall_Top_Only.png");
 		p1f = LoadTexture("RedFlag.png");
 		p2f = LoadTexture("BlueFlag.png");
+		flagMask = LoadTexture("FlagMask.png");
 	}
 
 	void Unload() {
@@ -197,6 +211,7 @@ struct Textures {
 		UnloadTexture(wallt);
 		UnloadTexture(p1f);
 		UnloadTexture(p2f);
+		UnloadTexture(flagMask);
 	}
 };
 
@@ -208,6 +223,7 @@ struct State {
 	Player b;
 	bool preventMoving;
 	Textures t;
+	Shaders s;
 	flux::Group g;
 	float openFade = 1;
 	float closeFade = 0;
@@ -229,7 +245,7 @@ void LoadMap(const char *m /* map to load */) {
 	s.m.M = 0;
 	s.openFade = 1;
 	s.g = flux::group();
-	s.g.to(0.4f)->with(&s.openFade, 0);
+	s.g.to(0.4f)->with(&s.openFade, 0)->ease(flux::EASE_QUADIN);
 	int idx = 0;
 	while (idx < s.m.w * s.m.h && *m) {
 		int x = idx % s.m.w;
@@ -304,8 +320,6 @@ void LoadMap(const char *m /* map to load */) {
 }
 
 bool /* game over */ LoadNextMap() {
-	PlaySound(SND_WIN);
-	SetSoundVolume(GetSound(SND_WIN), 2);
 	if (++s.M >= sizeof(maps) / sizeof(maps[0])) {
 		return true;
 	}
@@ -554,27 +568,40 @@ void DrawEntities() {
 void DrawTransitions() {
 	// Open transition
 	if (s.openFade > 0) {
-		DrawCircle(SCRWID / 2, SCRHEI / 2, 800 * s.openFade, BLACK);
+		float scale = 16 + 16 - 16 * s.openFade;
+
+		float x = (SCRWID - 16 * scale) / 2;
+		float y = (SCRHEI - 16 * scale) / 2;
+
+		DrawCircle(SCRWID / 2, SCRHEI / 2, SCRWID * s.openFade * 2 / 3, BLACK);
+
+		DrawTextureEx(s.t.flagMask, { x, y }, 0, scale, Fade(WHITE, s.openFade));
 	}
 
 	// Close Transition
 	if (s.closeFade > 0) {
+		float x = (SCRWID - 16 * 16) / 2;
+		float y = (SCRHEI - 16 * 16) / 2;
+
+		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(WHITE, s.closeFade * 2 - 1));
+
 		rlDrawRenderBatchActive();
 		glEnable(GL_STENCIL_TEST);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+		glClear(GL_STENCIL_BUFFER_BIT);
 
-		float x = (SCRWID - 16 * 16) / 2;
-		float y = (SCRHEI - 16 * 16) / 2;
-		DrawTextureEx(s.t.p1f, { x, y }, 0, 16, WHITE);
+		BeginShaderMode(s.s.opaque);
+		DrawTextureEx(s.t.flagMask, { x, y }, 0, 16, WHITE);
+		EndShaderMode();
 
 		rlDrawRenderBatchActive();
 		glStencilFunc(GL_EQUAL, 0, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		
-		DrawRectangle(0, 0, SCRWID, SCRHEI, BLACK);
+		DrawCircle(SCRWID / 2, SCRHEI / 2, SCRWID * s.closeFade * 2, BLACK);
 		
 		rlDrawRenderBatchActive();
 		glDisable(GL_STENCIL_TEST);
@@ -586,6 +613,7 @@ bool TrijamRunGame() {
 	bool restart = false;
 	s = {};
 	s.t.Load();
+	s.s.Load();
 	LoadNextMap();
 
 	PlaySound(SND_START);
@@ -627,9 +655,12 @@ bool TrijamRunGame() {
 			}
 
 			if (s.a.w && s.b.w) {
+				PlaySound(SND_WIN);
+				SetSoundVolume(GetSound(SND_WIN), 2);
 				s.preventMoving = true;
-				s.g.to(0.4f)
+				s.g.to(0.5f)
 					->with(&s.closeFade, 1)
+					->ease(flux::EASE_QUADIN)
 					->oncomplete([] {
 					s.closeFade = 0;
 					s.nextMap = true;
@@ -703,6 +734,7 @@ END:
 	SaveGlobState();
 
 	StopSound(SND_MUSIC);
+	s.s.Unload();
 	s.t.Unload();
 
 	return restart;

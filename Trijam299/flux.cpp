@@ -15,6 +15,8 @@ static float GetEasedValue(flux::Easing easing, float value) {
 		return value;
 	case flux::EASE_QUADOUT:
 		return 1 - (1 - value) * (1 - value);
+	case flux::EASE_QUADIN:
+		return value * value;
 	}
 	throw; // See comment at top of function.
 }

@@ -206,6 +206,7 @@ struct State {
 	Player b;
 	bool preventMoving;
 	Textures t;
+	flux::Group g;
 } s;
 
 void LoadMap(const char *m /* map to load */) {
@@ -218,11 +219,12 @@ void LoadMap(const char *m /* map to load */) {
 	s.m.w = (*m++) - '0';
 	s.m.h = (*m++) - '0';
 	s.m.m = new Tile[s.m.w * s.m.h];
-	s.a.w = false;
-	s.b.w = false;
+	s.a = {};
+	s.b = {};
 	s.m.M = 0;
 	fade = 1;
-	flux::to(0.4f)->with(&fade, 0);
+	s.g = flux::group();
+	s.g.to(0.4f)->with(&fade, 0);
 	int idx = 0;
 	while (idx < s.m.w * s.m.h && *m) {
 		int x = idx % s.m.w;
@@ -492,6 +494,7 @@ bool TrijamRunGame() {
 
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
+		s.g.update(GetFrameTime());
 		PlaySound(SND_MUSIC);
 
 		if (!s.preventMoving) {
@@ -506,9 +509,9 @@ bool TrijamRunGame() {
 			if (AOverlaps(T_FIRE) || BOverlaps(T_FIRE)) {
 				float *scale = AOverlaps(T_FIRE) ? &s.a.scale : &s.b.scale;
 				s.preventMoving = true;
-				flux::to(0.4f)
+				s.g.to(0.4f)
 					->with(scale, 0)
-					->delay(flux::totalremainingtime())
+					->afterallelse()
 					->oncomplete([=] {
 					s.preventMoving = false;
 					Undo();

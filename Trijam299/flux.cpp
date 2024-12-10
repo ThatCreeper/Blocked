@@ -60,6 +60,8 @@ flux::TweenPtr flux::Tween::ease(Easing type)
 flux::TweenPtr flux::Tween::delay(float time)
 {
 	delay_ = time;
+	if (time < 0)
+		delay_ = 0;
 
 	return shared_from_this();
 }
@@ -87,10 +89,22 @@ flux::TweenPtr flux::Tween::oncomplete(std::function<void()> fn)
 
 flux::TweenPtr flux::Tween::after(float duration)
 {
-	TweenPtr other = group_->to(duration);
+	if (group_ == nullptr)
+		throw;
+	return after(duration, *group_);
+}
+
+flux::TweenPtr flux::Tween::after(float duration, Group &group)
+{
+	TweenPtr other = group.to(duration);
 	other->forcedelay_ = duration_ + delay_ + forcedelay_;
 	other->time_ = time_;
 	other->parent_ = shared_from_this();
+
+	if (other->time_ > other->forcedelay_) {
+		other->time_ = 0;
+		other->forcedelay_ = 0;
+	}
 
 	return other;
 }
@@ -107,8 +121,15 @@ flux::TweenPtr flux::Tween::runningflag(int *flag)
 	return shared_from_this();
 }
 
+flux::TweenPtr flux::Tween::afterallelse()
+{
+	return delay(group_->totalremainingtime() - timeUntilEnd_());
+}
+
 bool flux::Tween::update_(float deltaTime)
 {
+	group_ = nullptr;
+
 	if (ended_)
 		return false;
 	if (parent_ && parent_->ended_)
@@ -167,24 +188,35 @@ float flux::Tween::timeUntilEnd_()
 void flux::Group::update(float deltatime)
 {
 	// Remove duplicates
-	// Todo: this might not be necessary.
+	// RESOLVED: this might not be necessary.
 	// It's not too much code, though, so I'm keeping it for now.
-	for (int i = tweens_.size() - 1; i >= 0; i--) {
-		for (int j = 0; j < i; j++) {
-			for (const Tween::Changer_ &ichanger : tweens_[i]->changers_) {
-				auto &jchangers = tweens_[j]->changers_;
-				auto it = jchangers.begin();
-				while (it != jchangers.end()) {
-					if (ichanger.toChange == it->toChange) {
-						it = jchangers.erase(it);
-					}
-					else {
-						it++;
-					}
-				}
-			}
-		}
-	}
+
+	// Okay, I tried being smart. I shouldn't've done that.
+	// This code is /probably/ actually useful for some sort of thing,
+	// but it would need some complicated changes that I don't want to
+	// do right now in order to become useful.
+	// Specifically, this tries to prevent a short tween from getting
+	// absorbed by a big one but honestly...
+	//
+	// Maybe this will be reintroduced someday.
+	// Caden - 12/9/2024
+
+	//for (int i = tweens_.size() - 1; i >= 0; i--) {
+	//	for (int j = 0; j < i; j++) {
+	//		for (const Tween::Changer_ &ichanger : tweens_[i]->changers_) {
+	//			auto &jchangers = tweens_[j]->changers_;
+	//			auto it = jchangers.begin();
+	//			while (it != jchangers.end()) {
+	//				if (ichanger.toChange == it->toChange) {
+	//					it = jchangers.erase(it);
+	//				}
+	//				else {
+	//					it++;
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	// Actually Process
 	auto it = tweens_.begin();

@@ -66,6 +66,8 @@ namespace flux {
 
 		/* Sets the time before the tween starts.
 		 * time is in seconds.
+		 * 
+		 * Delays less than 0 seconds are ignored.
 		 */
 		TweenPtr delay(float time);
 
@@ -98,6 +100,13 @@ namespace flux {
 		 */
 		TweenPtr after(float duration);
 
+		/* The same as after(), but this will not throw
+		 * when called on an active tween.
+		 * 
+		 * See also: ::after()
+		 */
+		TweenPtr after(float duration, Group &group);
+
 		/* Stops the tween and also any tweens chained
 		 * with after.
 		 * 
@@ -113,6 +122,11 @@ namespace flux {
 		 */
 		TweenPtr runningflag(int *flag);
 
+		/* New in flux.h!
+		 * Roughly a shorthand for
+		 * ->delay(group.getremainingtime() - duration)
+		 */
+		TweenPtr afterallelse();
 	private:
 		Tween() = default;
 
@@ -136,7 +150,7 @@ namespace flux {
 		std::vector<std::function<void()>> startfns_ = {};
 		std::vector<std::function<void(float)>> updatefns_ = {};
 		std::vector<std::function<void()>> endfns_ = {};
-		Group *group_;
+		Group *group_; // Set to null on update. Should be ignored.
 		std::shared_ptr<Tween> parent_ = nullptr;
 
 		friend class Group;
@@ -192,11 +206,6 @@ namespace flux {
 		 * owned by the group.
 		 */
 		float totalremainingtime();
-
-		Group() = default;
-		~Group() = default;
-		Group(const Group &) = delete;
-		Group(Group &&) = delete;
 	private:
 		std::vector<std::shared_ptr<Tween>> tweens_;
 

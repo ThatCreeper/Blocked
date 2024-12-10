@@ -1,5 +1,4 @@
-#version 300 es
-precision mediump float;
+#version 330
 in vec2 fragTexCoord;
 in vec4 fragColor;
 out vec4 finalColor;
@@ -9,6 +8,6 @@ void main()
 {
     vec4 texelColor = texture(texture0, fragTexCoord);
     finalColor = texelColor*colDiffuse*fragColor;
-    if (finalColor.a != 1)
+    if (finalColor.a != 1.0f)
         discard;
 }

@@ -6,6 +6,9 @@
 #include <unordered_set>
 #include <string>
 
+static constexpr Color PLAYER_RED = { .r = 0xD3, .g = 0x5D, .b = 0x5B, .a = 0xFF };
+static constexpr Color PLAYER_BLUE = { .r = 0x77, .g = 0x63, .b = 0xD3, .a = 0xFF };
+
 static struct Particle {
 	float r;
 	int x;
@@ -228,6 +231,7 @@ struct State {
 	float openFade = 1;
 	float closeFade = 0;
 	bool nextMap = false;
+	bool redFlag = false;
 } s;
 
 void LoadMap(const char *m /* map to load */) {
@@ -566,6 +570,8 @@ void DrawEntities() {
 }
 
 void DrawTransitions() {
+	Color flagColor = s.redFlag ? PLAYER_RED : PLAYER_BLUE;
+
 	// Open transition
 	if (s.openFade > 0) {
 		float scale = 16 + 16 - 16 * s.openFade;
@@ -575,7 +581,7 @@ void DrawTransitions() {
 
 		DrawCircle(SCRWID / 2, SCRHEI / 2, SCRWID * s.openFade * 2 / 3, BLACK);
 
-		DrawTextureEx(s.t.flagMask, { x, y }, 0, scale, Fade(WHITE, s.openFade));
+		DrawTextureEx(s.t.flagMask, { x, y }, 0, scale, Fade(flagColor, s.openFade));
 	}
 
 	// Close Transition
@@ -583,7 +589,7 @@ void DrawTransitions() {
 		float x = (SCRWID - 16 * 16) / 2;
 		float y = (SCRHEI - 16 * 16) / 2;
 
-		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(WHITE, s.closeFade * 2 - 1));
+		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(flagColor, s.closeFade * 2 - 0.66f));
 
 		rlDrawRenderBatchActive();
 		glEnable(GL_STENCIL_TEST);
@@ -658,6 +664,7 @@ bool TrijamRunGame() {
 				PlaySound(SND_WIN);
 				SetSoundVolume(GetSound(SND_WIN), 2);
 				s.preventMoving = true;
+				s.redFlag = !s.redFlag;
 				s.g.to(0.5f)
 					->with(&s.closeFade, 1)
 					->ease(flux::EASE_QUADIN)

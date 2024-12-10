@@ -1,8 +1,10 @@
+#include "raylib.h"
+
+#include "external/glad.h"
+
 #include "global.h"
 #include <unordered_set>
 #include <string>
-
-static float fade = 1;
 
 static struct Particle {
 	float r;
@@ -207,6 +209,9 @@ struct State {
 	bool preventMoving;
 	Textures t;
 	flux::Group g;
+	float openFade = 1;
+	float closeFade = 0;
+	bool nextMap = false;
 } s;
 
 void LoadMap(const char *m /* map to load */) {
@@ -222,9 +227,9 @@ void LoadMap(const char *m /* map to load */) {
 	s.a = {};
 	s.b = {};
 	s.m.M = 0;
-	fade = 1;
+	s.openFade = 1;
 	s.g = flux::group();
-	s.g.to(0.4f)->with(&fade, 0);
+	s.g.to(0.4f)->with(&s.openFade, 0);
 	int idx = 0;
 	while (idx < s.m.w * s.m.h && *m) {
 		int x = idx % s.m.w;
@@ -482,6 +487,100 @@ void DrawPlayer(Player &p, Texture2D c, bool onFire) {
 	DrawTextureEx(c, Vector2{ .x = p.rendX * 16 + o, .y = p.rendY * 16 + o }, 0, p.scale, WHITE);
 }
 
+void DrawBackgroundTiles() {
+	for (int y = -2; y < s.m.h + 2; y++) {
+		for (int x = -2; x < s.m.w + 2; x++) {
+			if (x >= 0 && x < s.m.w
+				&& y >= 0 && y < s.m.h)
+				continue;
+			DrawTexture(s.t.wall, x * 16, y * 16, WHITE);
+		}
+	}
+}
+
+void DrawMapTiles() {
+	for (int y = 0; y < s.m.h; y++) {
+		for (int x = 0; x < s.m.w; x++) {
+			int i = y * s.m.w + x;
+			Tile t = s.m.m[i];
+			switch (t) {
+			case T_AIR:
+				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
+				break;
+			case T_SOLID:
+				DrawTexture(s.t.wall, x * 16, y * 16, WHITE);
+				break;
+			case T_GOALA:
+				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
+				DrawTexture(s.t.p1f, x * 16, y * 16, WHITE);
+				break;
+			case T_GOALB:
+				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
+				DrawTexture(s.t.p2f, x * 16, y * 16, WHITE);
+				break;
+			case T_SOLIDBOTTOM:
+				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
+				DrawTexture(s.t.wallb, x * 16, y * 16, WHITE);
+				break;
+			case T_SOLIDTOP:
+				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
+				DrawTexture(s.t.wallt, x * 16, y * 16, WHITE);
+				break;
+			case T_FIRE:
+				DrawTexture(s.t.death, x * 16, y * 16, WHITE);
+			}
+		}
+	}
+}
+
+void DrawEntities() {
+	for (Button &B : s.m.B) {
+		DrawTexture(s.t.hole, B.x * 16, B.y * 16, WHITE);
+	}
+	for (Box &b : s.m.b) {
+		b.rendX = LerpPixelRound(b.rendX, b.x, GetFrameTime(), 0.08);
+		b.rendY = LerpPixelRound(b.rendY, b.y, GetFrameTime(), 0.08);
+		DrawTexture(s.t.box, b.rendX * 16, b.rendY * 16, WHITE);
+	}
+
+	DrawPlayer(s.a, s.t.p1, AOverlaps(T_FIRE));
+	DrawPlayer(s.b, s.t.p2, BOverlaps(T_FIRE));
+
+	for (Door &d : s.m.d) {
+		DrawTexture(DoorOpen(d) ? s.t.open : s.t.closed, d.x * 16, d.y * 16, WHITE);
+	}
+}
+
+void DrawTransitions() {
+	// Open transition
+	if (s.openFade > 0) {
+		DrawCircle(SCRWID / 2, SCRHEI / 2, 800 * s.openFade, BLACK);
+	}
+
+	// Close Transition
+	if (s.closeFade > 0) {
+		rlDrawRenderBatchActive();
+		glEnable(GL_STENCIL_TEST);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+		float x = (SCRWID - 16 * 16) / 2;
+		float y = (SCRHEI - 16 * 16) / 2;
+		DrawTextureEx(s.t.p1f, { x, y }, 0, 16, WHITE);
+
+		rlDrawRenderBatchActive();
+		glStencilFunc(GL_EQUAL, 0, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		
+		DrawRectangle(0, 0, SCRWID, SCRHEI, BLACK);
+		
+		rlDrawRenderBatchActive();
+		glDisable(GL_STENCIL_TEST);
+	}
+}
+
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
@@ -496,6 +595,14 @@ bool TrijamRunGame() {
 		flux::update(GetFrameTime());
 		s.g.update(GetFrameTime());
 		PlaySound(SND_MUSIC);
+
+		if (s.nextMap) {
+			if (LoadNextMap()) {
+				restart = GameOver();
+				goto END;
+			}
+			s.nextMap = false;
+		}
 
 		if (!s.preventMoving) {
 			if (IsKeyPressed(KEY_R))
@@ -520,10 +627,14 @@ bool TrijamRunGame() {
 			}
 
 			if (s.a.w && s.b.w) {
-				if (LoadNextMap()) {
-					restart = GameOver();
-					goto END;
-				}
+				s.preventMoving = true;
+				s.g.to(0.4f)
+					->with(&s.closeFade, 1)
+					->oncomplete([] {
+					s.closeFade = 0;
+					s.nextMap = true;
+					s.preventMoving = false;
+						});
 			}
 
 			if (IsKeyPressed(KEY_UP)) {
@@ -560,72 +671,15 @@ bool TrijamRunGame() {
 
 		BeginMode2D(c);
 
-		for (int y = -2; y < s.m.h + 2; y++) {
-			for (int x = -2; x < s.m.w + 2; x++) {
-				if (x >= 0 && x < s.m.w
-					&& y >= 0 && y < s.m.h)
-					continue;
-				DrawTexture(s.t.wall, x * 16, y * 16, WHITE);
-			}
-		}
-
-		for (int y = 0; y < s.m.h; y++) {
-			for (int x = 0; x < s.m.w; x++) {
-				int i = y * s.m.w + x;
-				Tile t = s.m.m[i];
-				switch (t) {
-				case T_AIR:
-					DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-					break;
-				case T_SOLID:
-					DrawTexture(s.t.wall, x * 16, y * 16, WHITE);
-					break;
-				case T_GOALA:
-					DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-					DrawTexture(s.t.p1f, x * 16, y * 16, WHITE);
-					break;
-				case T_GOALB:
-					DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-					DrawTexture(s.t.p2f, x * 16, y * 16, WHITE);
-					break;
-				case T_SOLIDBOTTOM:
-					DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-					DrawTexture(s.t.wallb, x * 16, y * 16, WHITE);
-					break;
-				case T_SOLIDTOP:
-					DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-					DrawTexture(s.t.wallt, x * 16, y * 16, WHITE);
-					break;
-				case T_FIRE:
-					DrawTexture(s.t.death, x * 16, y * 16, WHITE);
-				}
-			}
-		}
-
-		for (Button &B : s.m.B) {
-			DrawTexture(s.t.hole, B.x * 16, B.y * 16, WHITE);
-		}
-		for (Box &b : s.m.b) {
-			b.rendX = LerpPixelRound(b.rendX, b.x, GetFrameTime(), 0.08);
-			b.rendY = LerpPixelRound(b.rendY, b.y, GetFrameTime(), 0.08);
-			DrawTexture(s.t.box, b.rendX * 16, b.rendY * 16, WHITE);
-		}
-
-		DrawPlayer(s.a, s.t.p1, AOverlaps(T_FIRE));
-		DrawPlayer(s.b, s.t.p2, BOverlaps(T_FIRE));
-
-		for (Door &d : s.m.d) {
-			DrawTexture(DoorOpen(d) ? s.t.open : s.t.closed, d.x * 16, d.y * 16, WHITE);
-		}
+		DrawBackgroundTiles();
+		DrawMapTiles();
+		DrawEntities();
 
 		//DrawParticles();
 
 		EndMode2D();
 
-		/*if (AnimationPlaying(ANIM_OPEN)) {
-			DrawCircle(SCRWID / 2, SCRHEI / 2, 800 * (1 - (s.at / AnimationTime())), BLACK);
-		}*/
-		DrawCircle(SCRWID / 2, SCRHEI / 2, 800 * fade, BLACK);
+		DrawTransitions();
 
 		{
 			const char *t = TextFormat("%d moves this map\n%d moves in total", s.m.M, s.tM);

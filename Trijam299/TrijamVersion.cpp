@@ -638,6 +638,25 @@ void DrawTransitions() {
 	}
 }
 
+void CheckWin() {
+	s.a.w = AOverlaps(T_GOALA);
+	s.b.w = BOverlaps(T_GOALB);
+	if (s.a.w && s.b.w) {
+		PlaySound(SND_WIN);
+		SetSoundVolume(GetSound(SND_WIN), 2);
+		s.preventMoving = true;
+		s.redFlag = !s.redFlag;
+		s.g.to(0.5f)
+			->with(&s.closeFade, 1)
+			->ease(flux::EASE_QUADIN)
+			->oncomplete([] {
+			s.closeFade = 0;
+			s.nextMap = true;
+			s.preventMoving = false;
+				});
+	}
+}
+
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
@@ -668,9 +687,6 @@ bool TrijamRunGame() {
 			if (IsKeyPressed(KEY_U))
 				Undo();
 
-			s.a.w = AOverlaps(T_GOALA);
-			s.b.w = BOverlaps(T_GOALB);
-
 			if (AOverlaps(T_FIRE) || BOverlaps(T_FIRE)) {
 				float *scale = AOverlaps(T_FIRE) ? &s.a.scale : &s.b.scale;
 				s.preventMoving = true;
@@ -684,32 +700,21 @@ bool TrijamRunGame() {
 						});
 			}
 
-			if (s.a.w && s.b.w) {
-				PlaySound(SND_WIN);
-				SetSoundVolume(GetSound(SND_WIN), 2);
-				s.preventMoving = true;
-				s.redFlag = !s.redFlag;
-				s.g.to(0.5f)
-					->with(&s.closeFade, 1)
-					->ease(flux::EASE_QUADIN)
-					->oncomplete([] {
-					s.closeFade = 0;
-					s.nextMap = true;
-					s.preventMoving = false;
-						});
-			}
-
-			if (IsKeyPressed(KEY_UP)) {
+			if (!s.preventMoving && IsKeyPressed(KEY_UP)) {
 				EnactMove(TryMoveA(0, -1), TryMoveB(0, 1));
+				CheckWin();
 			}
-			if (IsKeyPressed(KEY_DOWN)) {
+			if (!s.preventMoving && IsKeyPressed(KEY_DOWN)) {
 				EnactMove(TryMoveA(0, 1), TryMoveB(0, -1));
+				CheckWin();
 			}
-			if (IsKeyPressed(KEY_LEFT)) {
+			if (!s.preventMoving && IsKeyPressed(KEY_LEFT)) {
 				EnactMove(TryMoveA(-1, 0), TryMoveB(1, 0));
+				CheckWin();
 			}
-			if (IsKeyPressed(KEY_RIGHT)) {
+			if (!s.preventMoving && IsKeyPressed(KEY_RIGHT)) {
 				EnactMove(TryMoveA(1, 0), TryMoveB(-1, 0));
+				CheckWin();
 			}
 		}
 

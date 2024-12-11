@@ -17,6 +17,8 @@ static float GetEasedValue(flux::Easing easing, float value) {
 		return 1 - (1 - value) * (1 - value);
 	case flux::EASE_QUADIN:
 		return value * value;
+	case flux::EASE_QUARTOUT:
+		return 1 - powf(1 - value, 4);
 	}
 	throw; // See comment at top of function.
 }
@@ -151,8 +153,9 @@ bool flux::Tween::update_(float deltaTime)
 
 	if (!started_) {
 		started_ = true;
-		for (auto &changer : changers_)
-			changer.initialValue = *changer.toChange;
+		if (delay_ + forcedelay_ > 0)
+			for (auto &changer : changers_)
+				changer.initialValue = *changer.toChange;
 		for (const auto &fn : startfns_)
 			fn();
 		if (runningFlag_)

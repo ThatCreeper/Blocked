@@ -228,10 +228,12 @@ struct State {
 	Textures t;
 	Shaders s;
 	flux::Group g;
+	float moveScale = 1;
 	float openFade = 1;
 	float closeFade = 0;
 	bool nextMap = false;
 	bool redFlag = false;
+	float moveWidth = 0;
 } s;
 
 void LoadMap(const char *m /* map to load */) {
@@ -248,6 +250,7 @@ void LoadMap(const char *m /* map to load */) {
 	s.b = {};
 	s.m.M = 0;
 	s.openFade = 1;
+	s.moveScale = 1;
 	s.g = flux::group();
 	s.g.to(0.4f)->with(&s.openFade, 0)->ease(flux::EASE_QUADIN);
 	int idx = 0;
@@ -345,9 +348,25 @@ bool DoorOpen(const Door &d) {
 	return false;
 }
 
+void BiggifyMove() {
+	s.moveScale = 1.05f;
+	s.g.to(0.25f)
+		->with(&s.moveScale, 1)
+		->ease(flux::EASE_QUARTOUT);
+}
+
+void SmallifyMove() {
+	s.moveScale = 0.95f;
+	s.g.to(0.15f)
+		->with(&s.moveScale, 1)
+		->ease(flux::EASE_QUARTOUT);
+}
+
 void Undo() {
 	if (s.m.t.empty())
 		return;
+
+	SmallifyMove();
 
 	Turn t = s.m.t.back();
 	s.m.t.pop_back();
@@ -492,6 +511,7 @@ void EnactMove(bool a, bool b) {
 	s.m.t.push_back(t);
 	PlaySound(SND_FIRE);
 	SetSoundVolume(GetSound(SND_FIRE), 0.2f);
+	BiggifyMove();
 }
 
 inline float LerpPixelRound(float from, float to, float x, float max) {
@@ -717,16 +737,27 @@ bool TrijamRunGame() {
 
 		EndMode2D();
 
-		DrawTransitions();
-
 		{
-			const char *t = TextFormat("%d moves this map\n%d moves in total", s.m.M, s.tM);
-			DrawText(t, 7, 7, 20, BLACK);
-			DrawText(t, 5, 5, 20, WHITE);
-
 			int w = MeasureText(s.m.n, 20);
 			DrawText(s.m.n, SCRWID - 3 - w, 7, 20, BLACK);
 			DrawText(s.m.n, SCRWID - 5 - w, 5, 20, WHITE);
+		}
+
+		DrawTransitions();
+
+		{
+			const char *t = TextFormat("%d\n%d", s.m.M, s.tM);
+			const char *t2 = " level moves\n total moves";
+			float fontSize = 20 * s.moveScale;
+			float spacing = fontSize / 10;
+			int maxWid = MeasureTextEx(GetFontDefault(), t, fontSize, spacing).x;
+			if (s.moveWidth == 0)
+				s.moveWidth = maxWid;
+			s.moveWidth = Lerp(s.moveWidth, maxWid, GetFrameTime(), 0.2f);
+			DrawTextEx(GetFontDefault(), t, { 7, 7 }, fontSize, spacing, BLACK);
+			DrawTextEx(GetFontDefault(), t, { 5, 5 }, fontSize, spacing, WHITE);
+			DrawText(t2, s.moveWidth + 7, 7, 20, BLACK);
+			DrawText(t2, s.moveWidth + 5, 5, 20, WHITE);
 		}
 
 		DrawKeybindBar("[Up] [Down] [Left] [Right]", "[U] Undo [R] Reset");

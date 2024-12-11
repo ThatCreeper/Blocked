@@ -1,6 +1,10 @@
 #include "global.h"
 
-bool TrijamRunGame();
+void TrijamLoadGame();
+bool TrijamUpdate();
+void TrijamRender();
+void TrijamUnloadGame();
+bool GameOver();
 
 int main() {
 	/*{
@@ -19,8 +23,16 @@ int main() {
 
 	SetTargetFPS(30);
 
-	while (TrijamRunGame());
+	TrijamLoadGame();
 
-END:
+	while (!WindowShouldClose()) {
+		if (TrijamUpdate()) {
+			GameOver();
+			break;
+		}
+		TrijamRender();
+	}
+
+	TrijamUnloadGame();
 	CloseWindow();
 }

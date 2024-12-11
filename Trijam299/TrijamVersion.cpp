@@ -36,7 +36,7 @@ static void AddParticles(int sx, int sy) {
 	}
 }
 
-static bool GameOver() {
+bool GameOver() {
 	StopSound(SND_MUSIC);
 	while (!WindowShouldClose()) {
 		BeginDrawing();
@@ -657,132 +657,126 @@ void CheckWin() {
 	}
 }
 
-bool TrijamRunGame() {
-	int fadein = 0;
-	bool restart = false;
+void TrijamLoadGame() {
 	s = {};
 	s.t.Load();
 	s.s.Load();
 	LoadNextMap();
 
 	PlaySound(SND_START);
-	//DoFadeOutAnimation();
+}
 
-	while (!WindowShouldClose()) {
-		flux::update(GetFrameTime());
-		s.g.update(GetFrameTime());
-		PlaySound(SND_MUSIC);
+bool TrijamUpdate() {
+	flux::update(GetFrameTime());
+	s.g.update(GetFrameTime());
+	PlaySound(SND_MUSIC);
 
-		if (s.nextMap) {
-			if (LoadNextMap()) {
-				restart = GameOver();
-				goto END;
-			}
-			s.nextMap = false;
+	if (s.nextMap) {
+		if (LoadNextMap()) {
+			return true;
 		}
-
-		if (!s.preventMoving) {
-			if (IsKeyPressed(KEY_R))
-				ReloadMap();
-			if (IsKeyPressed(KEY_U))
-				Undo();
-
-			if (AOverlaps(T_FIRE) || BOverlaps(T_FIRE)) {
-				float *scale = AOverlaps(T_FIRE) ? &s.a.scale : &s.b.scale;
-				s.preventMoving = true;
-				s.g.to(0.4f)
-					->with(scale, 0)
-					->afterallelse()
-					->oncomplete([=] {
-					s.preventMoving = false;
-					Undo();
-					*scale = 1;
-						});
-			}
-
-			if (!s.preventMoving && IsKeyPressed(KEY_UP)) {
-				EnactMove(TryMoveA(0, -1), TryMoveB(0, 1));
-				CheckWin();
-			}
-			if (!s.preventMoving && IsKeyPressed(KEY_DOWN)) {
-				EnactMove(TryMoveA(0, 1), TryMoveB(0, -1));
-				CheckWin();
-			}
-			if (!s.preventMoving && IsKeyPressed(KEY_LEFT)) {
-				EnactMove(TryMoveA(-1, 0), TryMoveB(1, 0));
-				CheckWin();
-			}
-			if (!s.preventMoving && IsKeyPressed(KEY_RIGHT)) {
-				EnactMove(TryMoveA(1, 0), TryMoveB(-1, 0));
-				CheckWin();
-			}
-		}
-
-		BeginDrawing();
-
-		ClearBackground(BLACK);
-
-		Camera2D c{ 0 };
-		{
-			int w = s.m.w * 16;
-			int h = s.m.h * 16;
-			float wz = SCRWID / (w + 16);
-			float hz = SCRHEI / (h + 16);
-			c.zoom = floor(Min(wz, hz));
-			c.target.x = w / 2;
-			c.target.y = h / 2;
-			c.offset.x = SCRWID / 2;
-			c.offset.y = SCRHEI / 2;
-			c.rotation = 0;
-		}
-
-		BeginMode2D(c);
-
-		DrawBackgroundTiles();
-		DrawMapTiles();
-		DrawEntities();
-
-		//DrawParticles();
-
-		EndMode2D();
-
-		{
-			int w = MeasureText(s.m.n, 20);
-			DrawText(s.m.n, SCRWID - 3 - w, 7, 20, BLACK);
-			DrawText(s.m.n, SCRWID - 5 - w, 5, 20, WHITE);
-		}
-
-		DrawTransitions();
-
-		{
-			const char *t = TextFormat("%d\n%d", s.m.M, s.tM);
-			const char *t2 = " level moves\n total moves";
-			float fontSize = 20 * s.moveScale;
-			float spacing = fontSize / 10;
-			int maxWid = MeasureTextEx(GetFontDefault(), t, fontSize, spacing).x;
-			if (s.moveWidth == 0)
-				s.moveWidth = maxWid;
-			s.moveWidth = Lerp(s.moveWidth, maxWid, GetFrameTime(), 0.2f);
-			DrawTextEx(GetFontDefault(), t, { 7, 7 }, fontSize, spacing, BLACK);
-			DrawTextEx(GetFontDefault(), t, { 5, 5 }, fontSize, spacing, WHITE);
-			DrawText(t2, s.moveWidth + 7, 7, 20, BLACK);
-			DrawText(t2, s.moveWidth + 5, 5, 20, WHITE);
-		}
-
-		DrawKeybindBar("[Up] [Down] [Left] [Right]", "[U] Undo [R] Reset");
-
-		DoFadeInAnimation(fadein);
-
-		EndDrawing();
+		s.nextMap = false;
 	}
 
-END:
+	if (!s.preventMoving) {
+		if (IsKeyPressed(KEY_R))
+			ReloadMap();
+		if (IsKeyPressed(KEY_U))
+			Undo();
 
+		if (AOverlaps(T_FIRE) || BOverlaps(T_FIRE)) {
+			float *scale = AOverlaps(T_FIRE) ? &s.a.scale : &s.b.scale;
+			s.preventMoving = true;
+			s.g.to(0.4f)
+				->with(scale, 0)
+				->afterallelse()
+				->oncomplete([=] {
+				s.preventMoving = false;
+				Undo();
+				*scale = 1;
+					});
+		}
+
+		if (!s.preventMoving && IsKeyPressed(KEY_UP)) {
+			EnactMove(TryMoveA(0, -1), TryMoveB(0, 1));
+			CheckWin();
+		}
+		if (!s.preventMoving && IsKeyPressed(KEY_DOWN)) {
+			EnactMove(TryMoveA(0, 1), TryMoveB(0, -1));
+			CheckWin();
+		}
+		if (!s.preventMoving && IsKeyPressed(KEY_LEFT)) {
+			EnactMove(TryMoveA(-1, 0), TryMoveB(1, 0));
+			CheckWin();
+		}
+		if (!s.preventMoving && IsKeyPressed(KEY_RIGHT)) {
+			EnactMove(TryMoveA(1, 0), TryMoveB(-1, 0));
+			CheckWin();
+		}
+	}
+
+	return false;
+}
+
+void TrijamRender() {
+	BeginDrawing();
+	ClearBackground(BLACK);
+
+	Camera2D c{ 0 };
+	{
+		int w = s.m.w * 16;
+		int h = s.m.h * 16;
+		float wz = SCRWID / (w + 16);
+		float hz = SCRHEI / (h + 16);
+		c.zoom = floor(Min(wz, hz));
+		c.target.x = w / 2;
+		c.target.y = h / 2;
+		c.offset.x = SCRWID / 2;
+		c.offset.y = SCRHEI / 2;
+		c.rotation = 0;
+	}
+
+	BeginMode2D(c);
+
+	DrawBackgroundTiles();
+	DrawMapTiles();
+	DrawEntities();
+
+	//DrawParticles();
+
+	EndMode2D();
+
+	{
+		int w = MeasureText(s.m.n, 20);
+		DrawText(s.m.n, SCRWID - 3 - w, 7, 20, BLACK);
+		DrawText(s.m.n, SCRWID - 5 - w, 5, 20, WHITE);
+	}
+
+	DrawTransitions();
+
+	{
+		const char *t = TextFormat("%d\n%d", s.m.M, s.tM);
+		const char *t2 = " level moves\n total moves";
+		float fontSize = 20 * s.moveScale;
+		float spacing = fontSize / 10;
+		int maxWid = MeasureTextEx(GetFontDefault(), t, fontSize, spacing).x;
+		if (s.moveWidth == 0)
+			s.moveWidth = maxWid;
+		s.moveWidth = Lerp(s.moveWidth, maxWid, GetFrameTime(), 0.2f);
+		DrawTextEx(GetFontDefault(), t, { 7, 7 }, fontSize, spacing, BLACK);
+		DrawTextEx(GetFontDefault(), t, { 5, 5 }, fontSize, spacing, WHITE);
+		DrawText(t2, s.moveWidth + 7, 7, 20, BLACK);
+		DrawText(t2, s.moveWidth + 5, 5, 20, WHITE);
+	}
+
+	DrawKeybindBar("[Up] [Down] [Left] [Right]", "[U] Undo [R] Reset");
+	EndDrawing();
+}
+
+void TrijamUnloadGame() {
 	SaveGlobState();
 
 	StopSound(SND_MUSIC);
 	s.s.Unload();
 	s.t.Unload();
-
-	return restart;
 }

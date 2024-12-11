@@ -5,9 +5,12 @@
 #include "global.h"
 #include <unordered_set>
 #include <string>
+#include <random>
 
 static constexpr Color PLAYER_RED = { .r = 0xD3, .g = 0x5D, .b = 0x5B, .a = 0xFF };
 static constexpr Color PLAYER_BLUE = { .r = 0x77, .g = 0x63, .b = 0xD3, .a = 0xFF };
+
+static std::mt19937_64 rng;
 
 static struct Particle {
 	float r;
@@ -511,6 +514,7 @@ void EnactMove(bool a, bool b) {
 	s.m.t.push_back(t);
 	PlaySound(SND_FIRE);
 	SetSoundVolume(GetSound(SND_FIRE), 0.2f);
+	SetSoundPitch(GetSound(SND_FIRE), std::uniform_real_distribution<float>(0.7f, 1.2f)(rng));
 	BiggifyMove();
 }
 

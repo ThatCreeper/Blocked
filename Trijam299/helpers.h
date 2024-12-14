@@ -12,7 +12,7 @@ inline int Overflow(int x, int max) {
 	return Overflow(x, 0, max);
 }
 
-inline float Clamp(float x, float min, float max) {
+inline float Clamp(float x, float min = 0, float max = 1) {
 	if (x < min)
 		return min;
 	if (x > max)

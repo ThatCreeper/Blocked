@@ -7,9 +7,6 @@
 #include <string>
 #include <random>
 
-static constexpr Color PLAYER_RED = { .r = 0xD3, .g = 0x5D, .b = 0x5B, .a = 0xFF };
-static constexpr Color PLAYER_BLUE = { .r = 0x77, .g = 0x63, .b = 0xD3, .a = 0xFF };
-
 static std::mt19937_64 rng;
 
 static struct Particle {
@@ -36,634 +33,174 @@ static void AddParticles(int sx, int sy) {
 	}
 }
 
+
+inline float LerpPixelRound(float from, float to, float x, float max, int pixelSize = 16) {
+	return LerpDistRound(from, to, x, max, 0.5f / pixelSize);
+}
+
+#define MAP_WIDTH 200
+#define MAP_HEIGHT 200
+
+class Enemy {
+public:
+	virtual ~Enemy() = default;
+	virtual void Process() = 0;
+	virtual void Draw() = 0;
+	virtual float GetReverseAnnoyance() = 0; // How do words?
+
+	float x;
+	float y;
+
+protected:
+	Vector2 GetNearestTree();
+	void DrawAnnoyanceMeter();
+};
+
+class TreeChopper : public Enemy {
+public:
+	~TreeChopper() = default;
+	void Process();
+	void Draw();
+	float GetReverseAnnoyance();
+
+private:
+	float reverseAnnoyance_ = 1;
+};
+
+struct Textures {
+
+	void Load() {
+	}
+
+	void Unload() {
+	}
+};
+
+struct Player {
+	float x;
+	float y;
+};
+
+struct State {
+	std::vector<std::unique_ptr<Enemy>> enemies;
+	std::vector<Vector2> trees;
+	Textures t;
+	Player p;
+	flux::Group g;
+} s;
+
+bool PlayerOverlaps(Vector2 other, float rad) {
+	float d = Dist(s.p.x, s.p.y, other.x, other.y);
+	return d < rad + 8;
+}
+
+void TreeChopper::Process() {
+	Vector2 nextPosition = GetNearestTree();
+	float distX = nextPosition.x - x;
+	float distY = nextPosition.y - y;
+	float mag = Dist(distX, distY);
+	float speed = 0.25f;
+
+	if (!PlayerOverlaps({ x, y }, 8)) {
+		x += distX / mag * speed;
+		y += distY / mag * speed;
+	}
+	else {
+		reverseAnnoyance_ -= 0.2f * GetFrameTime();
+	}
+}
+
+void TreeChopper::Draw() {
+	DrawCircle(x, y, 8, PURPLE);
+	DrawAnnoyanceMeter();
+}
+
+float TreeChopper::GetReverseAnnoyance() {
+	return reverseAnnoyance_;
+}
+
+void DrawPlayer() {
+	DrawCircle(s.p.x, s.p.y, 8, GREEN);
+}
+
+void DrawTree(Vector2 v) {
+	DrawCircle(v.x, v.y, 8, BROWN);
+}
+
+void PruneDeadEnemies() {
+	auto it = s.enemies.begin();
+	while (it != s.enemies.end()) {
+		if ((*it)->GetReverseAnnoyance() <= 0) {
+			it = s.enemies.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+}
+
+void MovePlayerX() {
+	float x = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
+
+	for (Vector2 tree : s.trees) {
+		if (PlayerOverlaps({ tree.x - x, tree.y }, 8))
+			return;
+	}
+
+	for (std::unique_ptr<Enemy> &enemy : s.enemies) {
+		if (PlayerOverlaps({ enemy->x - x, enemy->y }, 8))
+			return;
+	}
+
+	s.p.x += x;
+}
+
+void MovePlayerY() {
+	float y = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
+
+	for (Vector2 tree : s.trees) {
+		if (PlayerOverlaps({ tree.x, tree.y - y }, 8))
+			return;
+	}
+
+	for (std::unique_ptr<Enemy> &enemy : s.enemies) {
+		if (PlayerOverlaps({ enemy->x, enemy->y - y }, 8))
+			return;
+	}
+
+	s.p.y += y;
+}
+
+void MovePlayer() {
+	MovePlayerX();
+	MovePlayerY();
+}
+
 static bool GameOver() {
 	StopSound(SND_MUSIC);
+	const char *t = TextFormat("You made $d!");
 	while (!WindowShouldClose()) {
 		BeginDrawing();
 		ClearBackground(BLACK);
-		DrawText("You Won!", (800 - MeasureText("You Won!", 60)) / 2, 100, 60, WHITE);
+		DrawText(t, (800 - MeasureText(t, 60)) / 2, 100, 60, WHITE);
 		//DrawKeybindBar("", "");
 		EndDrawing();
 	}
 	return false;
 }
 
-const char *maps[] = {
-	"44a  B"
-	"||    "
-	"||    "
-	"||A  b"
-	"Straight Across",
-
-	"84a       "
-	"||  B *   "
-	"||     A  "
-	"||       b"
-	"Flipped Flags",
-
-	"98a       B"
-	"||         "
-	"||      ***"
-	"||A*       "
-	"||   ***   "
-	"||   ***   "
-	"||   ***   "
-	"||   ***  b"
-	"Into the Ceiling",
-
-	"98a        "
-	"||      .  "
-	"||  _      "
-	"|| ******* "
-	"|| *B*   & "
-	"|| *A    & "
-	"|| ******* "
-	"||        b"
-	"00" // doors
-	"Button & Box",
-
-	"97a  &  v  " // d0
-	"|| _ &  _. " // b0 d1 b1
-	"||   &.b   " // d2
-	"||*&**    ^" // d3
-	"||A   *&***" // d4
-	"|| _.      " // b2
-	"||        B"
-	"11102" // doors
-	"Three Doors"
-};
-
-enum Tile {
-	T_AIR,
-	T_SOLID,
-	T_GOALA,
-	T_GOALB,
-	T_SOLIDBOTTOM,
-	T_SOLIDTOP,
-	T_FIRE
-};
-
-struct Box {
-	int x;
-	int y;
-	float rendX;
-	float rendY;
-	int id;
-};
-
-struct Button {
-	int x;
-	int y;
-};
-
-struct Door {
-	int x;
-	int y;
-	int bRef;
-};
-
-enum TurnType {
-	TRN_LABEL,
-	TRN_BOX,
-	TRN_PLAYER
-};
-
-struct Turn {
-	int type;
-	int fX;
-	int tX;
-	int fY;
-	int tY;
-	int id;
-};
-
-struct Map {
-	int M = 0; // moves;
-	int w;
-	int h;
-	const char *n;
-	Tile *m = nullptr; // map data
-	std::vector<Box> b; // boxes
-	std::vector<Button> B; // buttons
-	std::vector<Door> d; // doors
-	std::vector<Turn> t; // turns
-};
-
-struct Player {
-	int x;
-	int y;
-	float rendX;
-	float rendY;
-	bool w; // won
-	float scale = 1;
-};
-
-struct Shaders {
-	Shader opaque;
-
-	void Load() {
-		opaque = LoadShader(nullptr, "opaqueonly.fs");
-	}
-
-	void Unload() {
-		UnloadShader(opaque);
-	}
-};
-
-struct Textures {
-	Texture2D bg;
-	Texture2D box;
-	Texture2D closed;
-	Texture2D open;
-	Texture2D death;
-	Texture2D hole;
-	Texture2D p1;
-	Texture2D p2;
-	Texture2D wall;
-	Texture2D wallb;
-	Texture2D wallt;
-	Texture2D p1f;
-	Texture2D p2f;
-	Texture2D flagMask;
-
-	void Load() {
-		bg = LoadTexture("Background.png");
-		box = LoadTexture("Box.png");
-		closed = LoadTexture("Closed_Gate.png");
-		death = LoadTexture("Death.png");
-		hole = LoadTexture("hole.png");
-		open = LoadTexture("OpenGate.png");
-		p1 = LoadTexture("P1.png");
-		p2 = LoadTexture("P2.png");
-		wall = LoadTexture("Wall.png");
-		wallb = LoadTexture("Wall_bottom_only.png");
-		wallt = LoadTexture("Wall_Top_Only.png");
-		p1f = LoadTexture("RedFlag.png");
-		p2f = LoadTexture("BlueFlag.png");
-		flagMask = LoadTexture("FlagMask.png");
-	}
-
-	void Unload() {
-		UnloadTexture(bg);
-		UnloadTexture(box);
-		UnloadTexture(closed);
-		UnloadTexture(death);
-		UnloadTexture(hole);
-		UnloadTexture(open);
-		UnloadTexture(p1);
-		UnloadTexture(p2);
-		UnloadTexture(wall);
-		UnloadTexture(wallb);
-		UnloadTexture(wallt);
-		UnloadTexture(p1f);
-		UnloadTexture(p2f);
-		UnloadTexture(flagMask);
-	}
-};
-
-struct State {
-	int M = -1; // map index
-	int tM = 0; // total moves
-	Map m;
-	Player a;
-	Player b;
-	bool preventMoving;
-	Textures t;
-	Shaders s;
-	flux::Group g;
-	float moveScale = 1;
-	float openFade = 1;
-	float closeFade = 0;
-	bool nextMap = false;
-	bool redFlag = false;
-	float moveWidth = 0;
-} s;
-
-void LoadMap(const char *m /* map to load */) {
-	if (s.m.m)
-		delete s.m.m;
-	s.m.b = {};
-	s.m.B = {};
-	s.m.d = {};
-	s.m.t = {};
-	s.m.w = (*m++) - '0';
-	s.m.h = (*m++) - '0';
-	s.m.m = new Tile[s.m.w * s.m.h];
-	s.a = {};
-	s.b = {};
-	s.m.M = 0;
-	s.openFade = 1;
-	s.moveScale = 1;
-	s.g = flux::group();
-	s.g.to(0.4f)->with(&s.openFade, 0)->ease(flux::EASE_QUADIN);
-	int idx = 0;
-	while (idx < s.m.w * s.m.h && *m) {
-		int x = idx % s.m.w;
-		int y = idx / s.m.w;
-		switch (*m) {
-		case '|':
-			idx--;
-			break;
-		case 'a':
-			s.a.x = x;
-			s.a.y = y;
-			s.a.rendX = x;
-			s.a.rendY = y;
-			s.m.m[idx] = T_AIR;
-			break;
-		case 'b':
-			s.b.x = x;
-			s.b.y = y;
-			s.b.rendX = x;
-			s.b.rendY = y;
-			s.m.m[idx] = T_AIR;
-			break;
-		case ' ':
-			s.m.m[idx] = T_AIR;
-			break;
-		case 'A':
-			s.m.m[idx] = T_GOALA;
-			break;
-		case 'B':
-			s.m.m[idx] = T_GOALB;
-			break;
-		case '*':
-			s.m.m[idx] = T_SOLID;
-			break;
-		case '.':
-			s.m.m[idx] = T_AIR;
-			s.m.b.push_back(Box{ .x = x, .y = y, .rendX = (float)x, .rendY = (float)y, .id = (int)s.m.b.size() });
-			break;
-		case '_':
-			s.m.m[idx] = T_AIR;
-			s.m.B.push_back(Button{ .x = x, .y = y });
-			break;
-		case '&':
-			s.m.m[idx] = T_AIR;
-			s.m.d.push_back(Door{ .x = x, .y = y, .bRef = -1 });
-			break;
-		case 'v':
-			s.m.m[idx] = T_SOLIDBOTTOM;
-			break;
-		case '^':
-			s.m.m[idx] = T_SOLIDTOP;
-			break;
-		case '+':
-			idx -= 2;
-			break;
-		case '!':
-			s.m.m[idx] = T_FIRE;
-			break;
-		default:
-			throw;
-			break;
-		}
-		m++;
-		idx++;
-	}
-
-	for (Door &d : s.m.d) {
-		d.bRef = (*m++) - '0';
-	}
-
-	s.m.n = m;
-}
-
-bool /* game over */ LoadNextMap() {
-	if (++s.M >= sizeof(maps) / sizeof(maps[0])) {
-		return true;
-	}
-	LoadMap(maps[s.M]);
-	return false;
-}
-
-void ReloadMap() {
-	s.tM -= s.m.M;
-	LoadMap(maps[s.M]);
-}
-
-bool DoorOpen(const Door &d) {
-	const Button &B = s.m.B[d.bRef];
-	for (const Box &b : s.m.b) {
-		if (b.x == B.x && b.y == B.y)
-			return true;
-	}
-	return false;
-}
-
-void BiggifyMove() {
-	s.moveScale = 1.05f;
-	s.g.to(0.25f)
-		->with(&s.moveScale, 1)
-		->ease(flux::EASE_QUARTOUT);
-}
-
-void SmallifyMove() {
-	s.moveScale = 0.95f;
-	s.g.to(0.15f)
-		->with(&s.moveScale, 1)
-		->ease(flux::EASE_QUARTOUT);
-}
-
-void Undo() {
-	if (s.m.t.empty())
-		return;
-
-	SmallifyMove();
-
-	Turn t = s.m.t.back();
-	s.m.t.pop_back();
-	s.tM--;
-	s.m.M--;
-
-	for (int i = 0; i < t.id; i++) {
-		Turn T = s.m.t.back();
-		s.m.t.pop_back();
-
-		switch (T.type) {
-		case TRN_LABEL:
-			break;
-		case TRN_BOX:
-			s.m.b[T.id].x = T.fX;
-			s.m.b[T.id].y = T.fY;
-			break;
-		case TRN_PLAYER:
-			if (T.id == 0) {
-				s.a.x = T.fX;
-				s.a.y = T.fY;
-			}
-			else {
-				s.b.x = T.fX;
-				s.b.y = T.fY;
-			}
-		}
-	}
-}
-
-template <class T>
-bool /* success */ TryMove(T &m, Player &o, int x, int y) {
-	//if (m.w)
-	//	return false;
-
-	if (m.x + x < 0 || m.y + y < 0)
-		return false;
-	if (m.x + x >= s.m.w || m.y + y >= s.m.h)
-		return false;
-
-	if (m.x + x == o.x && m.y + y == o.y)
-		return false;
-
-	Tile t = s.m.m[(m.y + y) * s.m.w + m.x + x];
-	Tile mt = s.m.m[m.y * s.m.w + m.x];
-	
-	if (t == T_SOLID)
-		return false;
-
-	if (y < 0 && t == T_SOLIDBOTTOM)
-		return false;
-	if (y > 0 && mt == T_SOLIDBOTTOM)
-		return false;
-	if (y > 0 && t == T_SOLIDTOP)
-		return false;
-	if (y < 0 && mt == T_SOLIDTOP)
-		return false;
-
-	for (Door &d : s.m.d)
-		if (d.x == m.x + x && d.y == m.y + y && !DoorOpen(d))
-			return false;
-
-	for (Box &b : s.m.b) {
-		if (b.x == m.x + x && b.y == m.y + y) {
-			if (TryMove<Box>(b, o, x, y)) {
-				Turn t;
-				t.type = TRN_BOX;
-				t.id = b.id;
-				t.fX = m.x + x;
-				t.fY = m.y + y;
-				t.tX = b.x;
-				t.tY = b.y;
-				s.m.t.push_back(t);
-			} else {
-				return false;
-			}
-		}
-	}
-
-	m.x += x;
-	m.y += y;
-
-	return true;
-}
-
-bool /* success */ TryMoveA(int x, int y) {
-	int fX = s.a.x;
-	int fY = s.a.y;
-	if (TryMove<Player>(s.a, s.b, x, y)) {
-		Turn t;
-		t.type = TRN_PLAYER;
-		t.fX = fX;
-		t.fY = fY;
-		t.tX = s.a.x;
-		t.tY = s.a.y;
-		t.id = 0;
-		s.m.t.push_back(t);
-		return true;
-	}
-	return false;
-}
-
-bool /* success */ TryMoveB(int x, int y) {
-	int fX = s.b.x;
-	int fY = s.b.y;
-	if (TryMove<Player>(s.b, s.a, x, y)) {
-		Turn t;
-		t.type = TRN_PLAYER;
-		t.fX = fX;
-		t.fY = fY;
-		t.tX = s.b.x;
-		t.tY = s.b.y;
-		t.id = 1;
-		s.m.t.push_back(t);
-		return true;
-	}
-	return false;
-}
-
-bool AOverlaps(Tile t) {
-	return s.m.m[s.a.y * s.m.w + s.a.x] == t;
-}
-
-bool BOverlaps(Tile t) {
-	return s.m.m[s.b.y * s.m.w + s.b.x] == t;
-}
-
-void EnactMove(bool a, bool b) {
-	if (!a && !b)
-		return;
-	s.tM++;
-	s.m.M++;
-	int i = 0;
-	for (const Turn &t : s.m.t) {
-		i++;
-		if (t.type == TRN_LABEL)
-			i = 0;
-	}
-	Turn t;
-	t.type = TRN_LABEL;
-	t.id = i;
-	s.m.t.push_back(t);
-	PlaySound(SND_FIRE);
-	SetSoundVolume(GetSound(SND_FIRE), 0.2f);
-	SetSoundPitch(GetSound(SND_FIRE), std::uniform_real_distribution<float>(0.7f, 1.2f)(rng));
-	BiggifyMove();
-}
-
-inline float LerpPixelRound(float from, float to, float x, float max) {
-	return LerpDistRound(from, to, x, max, 1.f / 32.f);
-}
-
-void DrawPlayer(Player &p, Texture2D c, bool onFire) {
-	p.rendX = LerpPixelRound(p.rendX, p.x, GetFrameTime(), 0.08);
-	p.rendY = LerpPixelRound(p.rendY, p.y, GetFrameTime(), 0.08);
-	float o = (16 - 16 * p.scale) / 2;
-	DrawTextureEx(c, Vector2{ .x = p.rendX * 16 + o, .y = p.rendY * 16 + o }, 0, p.scale, WHITE);
-}
-
-void DrawBackgroundTiles() {
-	for (int y = -2; y < s.m.h + 2; y++) {
-		for (int x = -2; x < s.m.w + 2; x++) {
-			if (x >= 0 && x < s.m.w
-				&& y >= 0 && y < s.m.h)
-				continue;
-			DrawTexture(s.t.wall, x * 16, y * 16, WHITE);
-		}
-	}
-}
-
-void DrawMapTiles() {
-	for (int y = 0; y < s.m.h; y++) {
-		for (int x = 0; x < s.m.w; x++) {
-			int i = y * s.m.w + x;
-			Tile t = s.m.m[i];
-			switch (t) {
-			case T_AIR:
-				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-				break;
-			case T_SOLID:
-				DrawTexture(s.t.wall, x * 16, y * 16, WHITE);
-				break;
-			case T_GOALA:
-				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-				DrawTexture(s.t.p1f, x * 16, y * 16, WHITE);
-				break;
-			case T_GOALB:
-				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-				DrawTexture(s.t.p2f, x * 16, y * 16, WHITE);
-				break;
-			case T_SOLIDBOTTOM:
-				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-				DrawTexture(s.t.wallb, x * 16, y * 16, WHITE);
-				break;
-			case T_SOLIDTOP:
-				DrawTexture(s.t.bg, x * 16, y * 16, WHITE);
-				DrawTexture(s.t.wallt, x * 16, y * 16, WHITE);
-				break;
-			case T_FIRE:
-				DrawTexture(s.t.death, x * 16, y * 16, WHITE);
-			}
-		}
-	}
-}
-
-void DrawEntities() {
-	for (Button &B : s.m.B) {
-		DrawTexture(s.t.hole, B.x * 16, B.y * 16, WHITE);
-	}
-	for (Box &b : s.m.b) {
-		b.rendX = LerpPixelRound(b.rendX, b.x, GetFrameTime(), 0.08);
-		b.rendY = LerpPixelRound(b.rendY, b.y, GetFrameTime(), 0.08);
-		DrawTexture(s.t.box, b.rendX * 16, b.rendY * 16, WHITE);
-	}
-
-	DrawPlayer(s.a, s.t.p1, AOverlaps(T_FIRE));
-	DrawPlayer(s.b, s.t.p2, BOverlaps(T_FIRE));
-
-	for (Door &d : s.m.d) {
-		DrawTexture(DoorOpen(d) ? s.t.open : s.t.closed, d.x * 16, d.y * 16, WHITE);
-	}
-}
-
-void DrawTransitions() {
-	Color flagColor = s.redFlag ? PLAYER_RED : PLAYER_BLUE;
-
-	// Open transition
-	if (s.openFade > 0) {
-		float scale = 16 + 16 - 16 * s.openFade;
-
-		float x = (SCRWID - 16 * scale) / 2;
-		float y = (SCRHEI - 16 * scale) / 2;
-
-		DrawCircle(SCRWID / 2, SCRHEI / 2, SCRWID * s.openFade * 2 / 3, BLACK);
-
-		DrawTextureEx(s.t.flagMask, { x, y }, 0, scale, Fade(flagColor, s.openFade));
-	}
-
-	// Close Transition
-	if (s.closeFade > 0) {
-		float x = (SCRWID - 16 * 16) / 2;
-		float y = (SCRHEI - 16 * 16) / 2;
-
-		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(flagColor, s.closeFade * 2 - 0.66f));
-
-		rlDrawRenderBatchActive();
-		glEnable(GL_STENCIL_TEST);
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-		glClear(GL_STENCIL_BUFFER_BIT);
-
-		BeginShaderMode(s.s.opaque);
-		DrawTextureEx(s.t.flagMask, { x, y }, 0, 16, WHITE);
-		EndShaderMode();
-
-		rlDrawRenderBatchActive();
-		glStencilFunc(GL_EQUAL, 0, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		
-		DrawCircle(SCRWID / 2, SCRHEI / 2, SCRWID * s.closeFade * 2, BLACK);
-		
-		rlDrawRenderBatchActive();
-		glDisable(GL_STENCIL_TEST);
-	}
-}
-
-void CheckWin() {
-	s.a.w = AOverlaps(T_GOALA);
-	s.b.w = BOverlaps(T_GOALB);
-	if (s.a.w && s.b.w) {
-		PlaySound(SND_WIN);
-		SetSoundVolume(GetSound(SND_WIN), 2);
-		s.preventMoving = true;
-		s.redFlag = !s.redFlag;
-		s.g.to(0.5f)
-			->with(&s.closeFade, 1)
-			->ease(flux::EASE_QUADIN)
-			->oncomplete([] {
-			s.closeFade = 0;
-			s.nextMap = true;
-			s.preventMoving = false;
-				});
-	}
-}
-
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
 	s = {};
-	s.t.Load();
-	s.s.Load();
-	LoadNextMap();
+	rng = std::mt19937_64(0x007ABCD);
+	s.trees.push_back({ -20, 0 });
+	{
+		TreeChopper *chopper = new TreeChopper;
+		chopper->x = -100;
+		chopper->y = 80;
+		s.enemies.push_back(std::unique_ptr<Enemy>(chopper));
+	}
 
 	PlaySound(SND_START);
 	//DoFadeOutAnimation();
@@ -671,105 +208,43 @@ bool TrijamRunGame() {
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
 		s.g.update(GetFrameTime());
-		PlaySound(SND_MUSIC);
 
-		if (s.nextMap) {
-			if (LoadNextMap()) {
-				restart = GameOver();
-				goto END;
-			}
-			s.nextMap = false;
+		MovePlayer();
+
+		for (std::unique_ptr<Enemy> &e : s.enemies) {
+			e->Process();
 		}
+		PruneDeadEnemies();
 
-		if (!s.preventMoving) {
-			if (IsKeyPressed(KEY_R))
-				ReloadMap();
-			if (IsKeyPressed(KEY_U))
-				Undo();
-
-			if (AOverlaps(T_FIRE) || BOverlaps(T_FIRE)) {
-				float *scale = AOverlaps(T_FIRE) ? &s.a.scale : &s.b.scale;
-				s.preventMoving = true;
-				s.g.to(0.4f)
-					->with(scale, 0)
-					->afterallelse()
-					->oncomplete([=] {
-					s.preventMoving = false;
-					Undo();
-					*scale = 1;
-						});
-			}
-
-			if (!s.preventMoving && IsKeyPressed(KEY_UP)) {
-				EnactMove(TryMoveA(0, -1), TryMoveB(0, 1));
-				CheckWin();
-			}
-			if (!s.preventMoving && IsKeyPressed(KEY_DOWN)) {
-				EnactMove(TryMoveA(0, 1), TryMoveB(0, -1));
-				CheckWin();
-			}
-			if (!s.preventMoving && IsKeyPressed(KEY_LEFT)) {
-				EnactMove(TryMoveA(-1, 0), TryMoveB(1, 0));
-				CheckWin();
-			}
-			if (!s.preventMoving && IsKeyPressed(KEY_RIGHT)) {
-				EnactMove(TryMoveA(1, 0), TryMoveB(-1, 0));
-				CheckWin();
-			}
-		}
+		//PlaySound(SND_MUSIC);
 
 		BeginDrawing();
 
 		ClearBackground(BLACK);
 
-		Camera2D c{ 0 };
-		{
-			int w = s.m.w * 16;
-			int h = s.m.h * 16;
-			float wz = SCRWID / (w + 16);
-			float hz = SCRHEI / (h + 16);
-			c.zoom = floor(Min(wz, hz));
-			c.target.x = w / 2;
-			c.target.y = h / 2;
-			c.offset.x = SCRWID / 2;
-			c.offset.y = SCRHEI / 2;
-			c.rotation = 0;
+		Camera2D cam;
+		cam.offset.x = SCRWID / 2;
+		cam.offset.y = SCRHEI / 2;
+		cam.target.x = s.p.x;
+		cam.target.y = s.p.y;
+		cam.zoom = 2;
+		cam.rotation = 0;
+
+		BeginMode2D(cam);
+
+		for (std::unique_ptr<Enemy> &e : s.enemies) {
+			e->Draw();
 		}
 
-		BeginMode2D(c);
+		for (Vector2 t : s.trees) {
+			DrawTree(t);
+		}
 
-		DrawBackgroundTiles();
-		DrawMapTiles();
-		DrawEntities();
-
-		//DrawParticles();
-
+		DrawPlayer();
+		
 		EndMode2D();
 
-		{
-			int w = MeasureText(s.m.n, 20);
-			DrawText(s.m.n, SCRWID - 3 - w, 7, 20, BLACK);
-			DrawText(s.m.n, SCRWID - 5 - w, 5, 20, WHITE);
-		}
-
-		DrawTransitions();
-
-		{
-			const char *t = TextFormat("%d\n%d", s.m.M, s.tM);
-			const char *t2 = " level moves\n total moves";
-			float fontSize = 20 * s.moveScale;
-			float spacing = fontSize / 10;
-			int maxWid = MeasureTextEx(GetFontDefault(), t, fontSize, spacing).x;
-			if (s.moveWidth == 0)
-				s.moveWidth = maxWid;
-			s.moveWidth = Lerp(s.moveWidth, maxWid, GetFrameTime(), 0.2f);
-			DrawTextEx(GetFontDefault(), t, { 7, 7 }, fontSize, spacing, BLACK);
-			DrawTextEx(GetFontDefault(), t, { 5, 5 }, fontSize, spacing, WHITE);
-			DrawText(t2, s.moveWidth + 7, 7, 20, BLACK);
-			DrawText(t2, s.moveWidth + 5, 5, 20, WHITE);
-		}
-
-		DrawKeybindBar("[Up] [Down] [Left] [Right]", "[U] Undo [R] Reset");
+		DrawKeybindBar("[Up] [Down] [Left] [Right]", "");
 
 		DoFadeInAnimation(fadein);
 
@@ -780,9 +255,36 @@ END:
 
 	SaveGlobState();
 
-	StopSound(SND_MUSIC);
-	s.s.Unload();
-	s.t.Unload();
+	//StopSound(SND_MUSIC);
 
 	return restart;
+}
+
+Vector2 Enemy::GetNearestTree() {
+	Vector2 nearest{ 0 };
+	float dist = INFINITY;
+	bool first = true;
+	for (Vector2 tree : s.trees) {
+		if (first) {
+			nearest = tree;
+			first = false;
+			dist = Dist(x, y, tree.x, tree.y);
+		}
+		else {
+			float d = Dist(x, y, tree.x, tree.y);
+			if (d < dist) {
+				nearest = tree;
+				dist = d;
+			}
+		}
+	}
+	return nearest;
+}
+
+void Enemy::DrawAnnoyanceMeter() {
+	if (GetReverseAnnoyance() <= 0)
+		return;
+
+	DrawRectangle(x - 6, y - 10, 12, 2, WHITE);
+	DrawRectangle(x - 6, y - 10, 12 * GetReverseAnnoyance(), 2, RED);
 }

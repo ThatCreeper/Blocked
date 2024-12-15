@@ -451,7 +451,9 @@ bool TrijamRunGame() {
 		}
 
 		if (s.stateType == S_RAY) {
+#ifndef PLATFORM_WEB
 			HideCursor();
+#endif
 			DrawTexture(GetMapTexture(), 0, 0, WHITE);
 
 			for (DroppedMine &mine : s.dropped) {

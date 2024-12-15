@@ -318,15 +318,15 @@ static bool WonSweeper() {
 	return true;
 }
 
-static void DrawStyledRect(int x, int y, int w, int h) {
+static void DrawStyledRect(int x, int y, int w, int h, bool inverse) {
 	DrawRectangle(x, y, w, h, GRAY);
-	DrawLine(x, y, x + w, y, WHITE);
-	DrawLine(x, y, x, y + h, WHITE);
-	DrawLine(x + w, y, x + w, y + h, BLACK);
-	DrawLine(x, y + h, x + w, y + h, BLACK);
+	DrawLine(x, y, x + w, y, inverse ? BLACK : WHITE);
+	DrawLine(x, y, x, y + h, inverse ? BLACK : WHITE);
+	DrawLine(x + w, y, x + w, y + h, inverse ? WHITE : BLACK);
+	DrawLine(x, y + h, x + w, y + h, inverse ? WHITE : BLACK);
 }
 
-bool TrijamRunGame() {
+bool PostjamRunGame() {
 	int fadein = 0;
 	bool restart = false;
 	s = {};
@@ -418,15 +418,24 @@ bool TrijamRunGame() {
 			}
 		}
 		else if (s.stateType == S_SHOP) {
-			if (IsKeyPressed(KEY_ESCAPE))
+
+			bool am = CheckCollisionPointRec(GetMousePosition(), { 1 * 24 + 1, 24, 6 * 24, 4 * 24 });
+			bool bm = CheckCollisionPointRec(GetMousePosition(), { 9 * 24 + 1, 24, 6 * 24, 4 * 24 });
+			bool cm = CheckCollisionPointRec(GetMousePosition(), { 12 * 24 + 1, 13 * 24, 3 * 24, 2 * 24 });
+
+			bool ad = IsKeyPressed(KEY_ONE) || (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && am);
+			bool bd = IsKeyPressed(KEY_TWO) || (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && bm);
+			bool cd = IsKeyPressed(KEY_ESCAPE) || (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && cm);
+
+			if (cd)
 				s.stateType = S_MS_BEGIN;
-			if (IsKeyPressed(KEY_ONE) && s.cash >= 13 + s.extraMines * s.extraMines * 7) {
+			if (ad && s.cash >= 13 + s.extraMines * s.extraMines * 7) {
 				s.stateType = S_MS_BEGIN;
 				s.cash -= 13 + s.extraMines * s.extraMines * 7;
 				s.extraMines++;
 				PlaySound(SND_DETECTION);
 			}
-			if (IsKeyPressed(KEY_TWO) && s.cash >= 37 + s.power * s.power * 12) {
+			if (bd && s.cash >= 37 + s.power * s.power * 12) {
 				s.stateType = S_MS_BEGIN;
 				s.cash -= 37 + s.power * s.power * 12;
 				s.power++;
@@ -470,22 +479,28 @@ bool TrijamRunGame() {
 		else if (s.stateType == S_SHOP) {
 			bool ap = s.cash >= 13 + s.extraMines * s.extraMines * 7;
 			bool bp = s.cash >= 37 + s.power * s.power * 12;
+			bool am = CheckCollisionPointRec(GetMousePosition(), { 1 * 24 + 1, 24, 6 * 24, 4 * 24 });
+			bool bm = CheckCollisionPointRec(GetMousePosition(), { 9 * 24 + 1, 24, 6 * 24, 4 * 24 });
+			bool cm = CheckCollisionPointRec(GetMousePosition(), { 12 * 24 + 1, 13 * 24, 3 * 24, 2 * 24 });
 
 			DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(BLACK, 0.5f));
-			DrawStyledRect(1 * 24 + 1, 24, 6 * 24, 4 * 24);
-			DrawStyledRect(9 * 24 + 1, 24, 6 * 24, 4 * 24);
+			DrawStyledRect(1 * 24 + 1, 24, 6 * 24, 4 * 24, ap && am);
+			DrawStyledRect(9 * 24 + 1, 24, 6 * 24, 4 * 24, bp && bm);
+			DrawStyledRect(12 * 24 + 1, 13 * 24, 3 * 24, 2 * 24, cm);
 			const char *t1 = "Mines";
 			const char *t2 = "Power";
 			const char *t3 = TextFormat("$%d", 13 + s.extraMines * s.extraMines * 7);
 			const char *t4 = TextFormat("$%d", 37 + s.power * s.power * 12);
 			const char *t5 = "Increase number of mines\ndiscoverable on\nthe board";
 			const char *t6 = "Increase artillery force\nused by the UAV";
+			const char *t7 = "Exit";
 			DrawText(t1, 1 * 24 + 1 + (6 * 24 - MeasureText(t1, 20)) / 2, 24 + 4, 20, ap ? WHITE : LIGHTGRAY);
 			DrawText(t2, 9 * 24 + 1 + (6 * 24 - MeasureText(t2, 20)) / 2, 24 + 4, 20, bp ? WHITE : LIGHTGRAY);
 			DrawText(t3, 1 * 24 + 1 + (6 * 24 - MeasureText(t3, 10)) / 2, 24 + 4 + 20 + 4, 10, ap ? WHITE : LIGHTGRAY);
 			DrawText(t4, 9 * 24 + 1 + (6 * 24 - MeasureText(t4, 10)) / 2, 24 + 4 + 20 + 4, 10, bp ? WHITE : LIGHTGRAY);
 			DrawText(t5, 1 * 24 + 1 + (6 * 24 - MeasureText(t5, 10)) / 2, 24 + 4 + 20 + 4 + 10 + 4, 10, ap ? WHITE : LIGHTGRAY);
 			DrawText(t6, 9 * 24 + 1 + (6 * 24 - MeasureText(t6, 10)) / 2, 24 + 4 + 20 + 4 + 10 + 4, 10, bp ? WHITE : LIGHTGRAY);
+			DrawText(t7, 12 * 24 + 1 + (3 * 24 - MeasureText(t7, 10)) / 2, 13 * 24 + (2 * 24 - 10) / 2, 10, WHITE);
 		}
 
 		if (s.stateType == S_MS_FAIL) {
@@ -510,7 +525,7 @@ bool TrijamRunGame() {
 			float spacing = size / 10;
 			DrawTextPro(GetFontDefault(), t, { SCRWID - 5, 20 }, { MeasureTextEx(GetFontDefault(), t, size, spacing).x, 15 }, (1 - s.minesSize) * -40, size, spacing, RED);
 		}
-		
+
 		if (s.stateType == S_MS_BEGIN) {
 			DrawKeybindBar("[Left Click] Begin", TextFormat("$%d", s.cash), false);
 		}
@@ -527,7 +542,7 @@ bool TrijamRunGame() {
 			DrawKeybindBar("[Left Click] Drop", TextFormat("$%d", s.cash), false);
 		}
 		else if (s.stateType == S_SHOP) {
-			DrawKeybindBar("[1/2] Spend [Esc] Exit", TextFormat("$%d", s.cash), false);
+			DrawKeybindBar("[Click] Spend [Esc] Exit", TextFormat("$%d", s.cash), false);
 		}
 
 		DoFadeInAnimation(fadein);

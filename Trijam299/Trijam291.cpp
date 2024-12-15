@@ -31,12 +31,12 @@ bool PickFlags() {
 			overflow = BLACK;
 		}
 
-		if (sel > 0) {
+		if (sel > 1) {
 			sel = 0;
 			overflow = BLUE;
 		}
 		else if (sel < 0) {
-			sel = 0;
+			sel = 1;
 			overflow = ORANGE;
 		}
 
@@ -53,13 +53,17 @@ bool PickFlags() {
 		DrawText("Edition of Recovery:", 15, 15, 20, WHITE);
 
 		DrawLine(15, 45, SCRWID - 15, 45, overflow);
-		DrawLine(15, 85, SCRWID - 15, 85, overflow);
+		DrawLine(15, 125, SCRWID - 15, 125, overflow);
 		//DrawLine(15, 165, 395, 165, overflow);
 
 		if (sel == 0) DrawRectangle(15, 50, SCRWID - 30, 30, DARKGRAY);
 		if (sel == 0) DrawRectangleLines(15, 50, SCRWID - 30, 30, WHITE);
 		if (sel == 0) DrawText("Version of the game made\n\nduring the three hours\n\nof the Trijam.", 25, 250, 20, WHITE);
 		DrawText("3-Hour Edition", 25, 55, 20, WHITE);
+		if (sel == 1) DrawRectangle(15, 90, SCRWID - 30, 30, DARKGRAY);
+		if (sel == 1) DrawRectangleLines(15, 90, SCRWID - 30, 30, WHITE);
+		if (sel == 1) DrawText("Version of the game with\n\nslight changes in order\n\nto improve discoverability.\n\n(No major gameplay changes)", 25, 220, 20, WHITE);
+		DrawText("Clarity", 25, 95, 20, WHITE);
 
 		DrawKeybindBar("[Up] [Down]", "[Enter] Select");
 
@@ -69,6 +73,7 @@ bool PickFlags() {
 }
 
 bool TrijamRunGame();
+bool PostjamRunGame();
 
 int main() {
 	/*{
@@ -90,7 +95,7 @@ int main() {
 	if (!PickFlags())
 		goto END;
 
-	while (TrijamRunGame());
+	while (updated ? PostjamRunGame() : TrijamRunGame());
 
 END:
 	CloseWindow();

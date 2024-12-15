@@ -10,6 +10,9 @@
 
 static std::mt19937_64 rng;
 
+#define MAP_WIDTH 16
+#define MAP_HEIGHT
+
 static struct Particle {
 	float r;
 	int x;

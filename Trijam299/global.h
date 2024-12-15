@@ -1,7 +1,7 @@
 #pragma once
 
-#define SCRWID 800
-#define SCRHEI 600
+#define SCRWID 24 * 16
+#define SCRHEI 24 * 16 + 31
 
 #include <raylib.h>
 #include <rlgl.h>

@@ -139,9 +139,6 @@ bool flux::Tween::update_(float deltaTime)
 	if (parent_ && parent_->ended_)
 		return false;
 
-	if (changers_.empty())
-		return false;
-
 	time_ += deltaTime;
 
 	float time = time_ - delay_ - forcedelay_;

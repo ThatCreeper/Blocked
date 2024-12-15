@@ -3,7 +3,7 @@
 // WHATEVER YOU DO, DO NOT ADD CLASSES PLEASE FOR THE LOVE OF GOD. OR, IF YOU DO, THINK ABOUT IT. THINK "DO I NEED THIS". THINK THAT AND THEN SAY /NO/!
 
 #ifdef _DEBUG
- #define FORCE_EDITION 0
+// #define FORCE_EDITION 0
 #endif
 
 static bool updated = false;
@@ -50,15 +50,15 @@ bool PickFlags() {
 		ClearBackground(BLACK);
 
 		// TODO: Replace this.
-		DrawText("Edition of Blocked:", 15, 15, 20, WHITE);
+		DrawText("Edition of Recovery:", 15, 15, 20, WHITE);
 
-		DrawLine(15, 45, 395, 45, overflow);
-		DrawLine(15, 85, 395, 85, overflow);
+		DrawLine(15, 45, SCRWID - 15, 45, overflow);
+		DrawLine(15, 85, SCRWID - 15, 85, overflow);
 		//DrawLine(15, 165, 395, 165, overflow);
 
-		if (sel == 0) DrawRectangle(15, 50, 380, 30, DARKGRAY);
-		if (sel == 0) DrawRectangleLines(15, 50, 380, 30, WHITE);
-		if (sel == 0) DrawText("Version of the game made\n\nduring the three hours\n\nof the Trijam.", 460, 50, 20, WHITE);
+		if (sel == 0) DrawRectangle(15, 50, SCRWID - 30, 30, DARKGRAY);
+		if (sel == 0) DrawRectangleLines(15, 50, SCRWID - 30, 30, WHITE);
+		if (sel == 0) DrawText("Version of the game made\n\nduring the three hours\n\nof the Trijam.", 25, 250, 20, WHITE);
 		DrawText("3-Hour Edition", 25, 55, 20, WHITE);
 
 		DrawKeybindBar("[Up] [Down]", "[Enter] Select");
@@ -80,7 +80,7 @@ int main() {
 		RClose(r);
 	}*/
 
-	InitWindow(SCRWID, SCRHEI, "Blocked");
+	InitWindow(SCRWID, SCRHEI, "Recovery");
 	InitAudioDevice();
 	LoadSounds();
 	SetExitKey(0);

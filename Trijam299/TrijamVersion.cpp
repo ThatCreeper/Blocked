@@ -55,6 +55,9 @@ struct Textures {
 	Texture2D n8;
 	Texture2D bomb;
 	Texture2D flag;
+	Texture2D overlay;
+	Texture2D map1;
+	Texture2D map2;
 
 	void Load() {
 		tileo = LoadTexture("tileo.png");
@@ -69,9 +72,15 @@ struct Textures {
 		n8 = LoadTexture("8.png");
 		bomb = LoadTexture("mine.png");
 		flag = LoadTexture("flag.png");
+		overlay = LoadTexture("overlay.png");
+		map1 = LoadTexture("map1.png");
+		map2 = LoadTexture("map2.png");
 	}
 
 	void Unload() {
+		UnloadTexture(map2);
+		UnloadTexture(map1);
+		UnloadTexture(overlay);
 		UnloadTexture(flag);
 		UnloadTexture(bomb);
 		UnloadTexture(n8);
@@ -99,7 +108,14 @@ enum StateType {
 	S_MS,
 	S_MS_FAIL,
 	S_MS_WIN,
-	S_RAY
+	S_RAY,
+	S_SHOP
+};
+
+struct DroppedMine {
+	float x;
+	float y;
+	float scale = 2;
 };
 
 struct State {
@@ -109,7 +125,25 @@ struct State {
 	Tile tileState[MAP_HEIGHT][MAP_WIDTH];
 	StateType stateType = S_MS_BEGIN;
 	int mines = 0;
+	int cash = 0;
+	int map = 0;
+	float minesSize = 1;
+	int dropping = 0;
+	std::vector<DroppedMine> dropped;
+	int extraMines = 0;
+	bool music = false;
+	int power = 0;
 } s;
+
+Texture2D GetMapTexture() {
+	switch (s.map) {
+	case 0:
+		return s.t.map1;
+	case 1:
+		return s.t.map2;
+	}
+	return s.t.map1;
+}
 
 Texture2D *GetTexture(int level) {
 	switch (level) {
@@ -169,15 +203,23 @@ static bool GameOver() {
 }
 
 void LoadMap() {
-	s.mines = 9 + rng() % 13;
+	s.mines = 3 + s.extraMines + rng() % (4 + s.extraMines);
+	s.map = rng() % 2;
 	for (int y = 0; y < MAP_HEIGHT; y++) {
 		for (int x = 0; x < MAP_WIDTH; x++) {
 			s.tileState[y][x] = T_CLOSED;
 			s.tiles[y][x] = 0;
 		}
 	}
-	for (int i = 0; i < s.mines; i++) {
-		s.tiles[rng() % MAP_HEIGHT][rng() % MAP_HEIGHT] = 8;
+	int duplicate = 0;
+	for (int i = 0; i < s.mines + duplicate; i++) {
+		if (duplicate > 100)
+			break;
+		int y = rng() % MAP_HEIGHT;
+		int x = rng() % MAP_WIDTH;
+		if (s.tiles[y][x] == 8)
+			duplicate++;
+		s.tiles[y][x] = 8;
 	}
 	for (int y = 0; y < MAP_HEIGHT; y++) {
 		for (int x = 0; x < MAP_WIDTH; x++) {
@@ -269,9 +311,19 @@ bool WonSweeper() {
 		for (int x = 0; x < MAP_WIDTH; x++) {
 			if (s.tiles[y][x] != 8 && s.tileState[y][x] != T_OPEN)
 				return false;
+			if (s.tiles[y][x] == 8 && s.tileState[y][x] != T_FLAGGED)
+				return false;
 		}
 	}
 	return true;
+}
+
+void DrawStyledRect(int x, int y, int w, int h) {
+	DrawRectangle(x, y, w, h, GRAY);
+	DrawLine(x, y, x + w, y, WHITE);
+	DrawLine(x, y, x, y + h, WHITE);
+	DrawLine(x + w, y, x + w, y + h, BLACK);
+	DrawLine(x, y + h, x + w, y + h, BLACK);
 }
 
 bool TrijamRunGame() {
@@ -300,42 +352,138 @@ bool TrijamRunGame() {
 					} while (s.tiles[tY][tX] != 0);
 					OpenTile(tX, tY);
 					s.stateType = S_MS;
+					PlaySound(SND_MENU);
 				}
 			}
 		}
 		else if (s.stateType == S_MS) {
 			if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
 				Flag(tX, tY);
+				PlaySound(SND_MENU);
 			}
 			if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
 				OpenTile(tX, tY);
 				if (s.tileState[tY][tX] == T_OPEN && s.tiles[tY][tX] == 8) {
 					s.tileState[tY][tX] = T_DEATH;
 					s.stateType = S_MS_FAIL;
+					PlaySound(SND_EXPLOSION);
 				}
-				if (WonSweeper()) {
-					s.stateType = S_MS_WIN;
+				else {
+					PlaySound(SND_MENU);
 				}
+			}
+			if (WonSweeper()) {
+				s.stateType = S_MS_WIN;
 			}
 		}
 		else if (s.stateType == S_MS_WIN) {
 			if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
 				s.stateType = S_RAY;
+				s.minesSize = 1;
+				s.dropped = {};
+			}
+		}
+		else if (s.stateType == S_RAY) {
+			for (DroppedMine &mine : s.dropped) {
+				mine.scale -= GetFrameTime() * 2;
+			}
+
+			if (s.mines <= 0 && s.dropping <= 0) {
+				CloseTiles();
+				s.stateType = S_SHOP;
+			}
+
+			if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+				if (s.mines > 0) {
+					s.minesSize = 0.8;
+					s.g.to(1.5f)
+						->with(&s.minesSize, 1)
+						->oncomplete([] {
+						PlaySound(SND_EXPLOSION);
+						s.music = true;
+							})
+						->after(0.5f)
+						->oncomplete([] {
+						PlaySound(SND_REPAIR);
+						s.cash += 5 + 2 * s.power;
+							});
+					s.g.to(2.5f)
+						->runningflag(&s.dropping);
+					s.dropped.push_back(DroppedMine{
+						.x = (float)GetMouseX(),
+						.y = (float)GetMouseY()
+						});
+					s.mines--;
+				}
+			}
+		}
+		else if (s.stateType == S_SHOP) {
+			if (IsKeyPressed(KEY_ESCAPE))
+				s.stateType = S_MS_BEGIN;
+			if (IsKeyPressed(KEY_ONE) && s.cash >= 13 + s.extraMines * s.extraMines * 7) {
+				s.stateType = S_MS_BEGIN;
+				s.cash -= 13 + s.extraMines * s.extraMines * 7;
+				s.extraMines++;
+				PlaySound(SND_DETECTION);
+			}
+			if (IsKeyPressed(KEY_TWO) && s.cash >= 37 + s.power * s.power * 12) {
+				s.stateType = S_MS_BEGIN;
+				s.cash -= 37 + s.power * s.power * 12;
+				s.power++;
+				PlaySound(SND_DETECTION);
 			}
 		}
 
-		//PlaySound(SND_MUSIC);
+		if (s.music)
+			PlaySound(SND_MUSIC);
 
 		BeginDrawing();
 
 		ClearBackground(GRAY);
 
 		if (s.stateType != S_RAY) {
+			ShowCursor();
 			for (int y = 0; y < MAP_HEIGHT; y++) {
 				for (int x = 0; x < MAP_WIDTH; x++) {
 					DrawTile(x, y);
 				}
 			}
+		}
+
+		if (s.stateType == S_RAY) {
+			HideCursor();
+			DrawTexture(GetMapTexture(), 0, 0, WHITE);
+
+			for (DroppedMine &mine : s.dropped) {
+				if (mine.scale <= 0)
+					continue;
+				float wid = s.t.bomb.width * mine.scale;
+				float hei = s.t.bomb.height * mine.scale;
+				DrawTextureEx(s.t.bomb, { mine.x - wid / 2, mine.y - hei / 2 }, 0, mine.scale, GRAY);
+			}
+
+			DrawTexture(s.t.overlay, 0, 0, WHITE);
+			DrawCircleLines(GetMouseX(), GetMouseY(), 32, { 0, 255, 0, 255 });
+		}
+		else if (s.stateType == S_SHOP) {
+			bool ap = s.cash >= 13 + s.extraMines * s.extraMines * 7;
+			bool bp = s.cash >= 37 + s.power * s.power * 12;
+
+			DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(BLACK, 0.5f));
+			DrawStyledRect(1 * 24 + 1, 24, 6 * 24, 4 * 24);
+			DrawStyledRect(9 * 24 + 1, 24, 6 * 24, 4 * 24);
+			const char *t1 = "Mines";
+			const char *t2 = "Power";
+			const char *t3 = TextFormat("$%d", 13 + s.extraMines * s.extraMines * 7);
+			const char *t4 = TextFormat("$%d", 37 + s.power * s.power * 12);
+			const char *t5 = "Increase number of mines\ndiscoverable on\nthe board";
+			const char *t6 = "Increase artillery force\nused by the UAV";
+			DrawText(t1, 1 * 24 + 1 + (6 * 24 - MeasureText(t1, 20)) / 2, 24 + 4, 20, ap ? WHITE : LIGHTGRAY);
+			DrawText(t2, 9 * 24 + 1 + (6 * 24 - MeasureText(t2, 20)) / 2, 24 + 4, 20, bp ? WHITE : LIGHTGRAY);
+			DrawText(t3, 1 * 24 + 1 + (6 * 24 - MeasureText(t3, 10)) / 2, 24 + 4 + 20 + 4, 10, ap ? WHITE : LIGHTGRAY);
+			DrawText(t4, 9 * 24 + 1 + (6 * 24 - MeasureText(t4, 10)) / 2, 24 + 4 + 20 + 4, 10, bp ? WHITE : LIGHTGRAY);
+			DrawText(t5, 1 * 24 + 1 + (6 * 24 - MeasureText(t5, 10)) / 2, 24 + 4 + 20 + 4 + 10 + 4, 10, ap ? WHITE : LIGHTGRAY);
+			DrawText(t6, 9 * 24 + 1 + (6 * 24 - MeasureText(t6, 10)) / 2, 24 + 4 + 20 + 4 + 10 + 4, 10, bp ? WHITE : LIGHTGRAY);
 		}
 
 		if (s.stateType == S_MS_FAIL) {
@@ -354,21 +502,30 @@ bool TrijamRunGame() {
 			DrawText(tM, (SCRWID - MeasureText(tM, 20)) / 2, (SCRHEI - 20) / 2, 20, WHITE);
 			DrawText(tB, (SCRWID - MeasureText(tB, 20)) / 2, SCRHEI - 31 - 20 - 20, 20, WHITE);
 		}
+		else if (s.stateType == S_RAY) {
+			const char *t = TextFormat("%d", s.mines);
+			float size = 30 * s.minesSize;
+			float spacing = size / 10;
+			DrawTextPro(GetFontDefault(), t, { SCRWID - 5, 20 }, { MeasureTextEx(GetFontDefault(), t, size, spacing).x, 15 }, (1 - s.minesSize) * -40, size, spacing, RED);
+		}
 		
 		if (s.stateType == S_MS_BEGIN) {
-			DrawKeybindBar("[Left Click] Begin", "", false);
+			DrawKeybindBar("[Left Click] Begin", TextFormat("$%d", s.cash), false);
 		}
 		else if (s.stateType == S_MS) {
-			DrawKeybindBar("[Left Click] Sweep [Right Click] Flag", TextFormat("Mines: %d", s.mines), false);
+			DrawKeybindBar("[Click/RClick]", TextFormat("$%d Mines: %d", s.cash, s.mines), false);
 		}
 		else if (s.stateType == S_MS_FAIL) {
 			DrawKeybindBar("", "", false);
 		}
 		else if (s.stateType == S_MS_WIN) {
-			DrawKeybindBar("[Left Click] Continue...", "", false);
+			DrawKeybindBar("[Left Click] Continue...", TextFormat("$%d", s.cash), false);
 		}
 		else if (s.stateType == S_RAY) {
-			DrawKeybindBar("[Left Click] Drop", "", false);
+			DrawKeybindBar("[Left Click] Drop", TextFormat("$%d", s.cash), false);
+		}
+		else if (s.stateType == S_SHOP) {
+			DrawKeybindBar("[1/2] Spend [Esc] Exit", TextFormat("$%d", s.cash), false);
 		}
 
 		DoFadeInAnimation(fadein);
@@ -381,7 +538,7 @@ END:
 	SaveGlobState();
 	s.t.Unload();
 
-	//StopSound(SND_MUSIC);
+	StopSound(SND_MUSIC);
 
 	return restart;
 }

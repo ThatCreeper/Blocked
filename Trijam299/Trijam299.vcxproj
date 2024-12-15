@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="flux.h" />
+    <ClInclude Include="flux_easings.h" />
     <ClInclude Include="gfx.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="globstate.h" />

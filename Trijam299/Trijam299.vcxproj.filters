@@ -62,5 +62,8 @@
     <ClInclude Include="flux.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="flux_easings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

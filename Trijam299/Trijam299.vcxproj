@@ -137,6 +137,7 @@
     <ClCompile Include="flux.cpp" />
     <ClCompile Include="gfx.cpp" />
     <ClCompile Include="globstate.cpp" />
+    <ClCompile Include="lisp.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="Trijam291.cpp" />
     <ClCompile Include="TrijamVersion.cpp" />

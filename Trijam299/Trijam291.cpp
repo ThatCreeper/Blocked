@@ -58,7 +58,7 @@ bool PickFlags() {
 
 		if (sel == 0) DrawRectangle(15, 50, SCRWID - 30, 30, DARKGRAY);
 		if (sel == 0) DrawRectangleLines(15, 50, SCRWID - 30, 30, WHITE);
-		if (sel == 0) DrawText("Version of the game made\n\nduring the three hours\n\nof the Trijam.", 25, 250, 20, WHITE);
+		if (sel == 0) DrawText("Version of the game made\n\nduring the three hours\n\nof the Trijam.\n\n(This version is not recommended)", 25, 220, 20, RED);
 		DrawText("3-Hour Edition", 25, 55, 20, WHITE);
 		if (sel == 1) DrawRectangle(15, 90, SCRWID - 30, 30, DARKGRAY);
 		if (sel == 1) DrawRectangleLines(15, 90, SCRWID - 30, 30, WHITE);

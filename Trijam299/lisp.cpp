@@ -9,23 +9,26 @@ struct str {
 	int end;
 };
 
-enum datatype {
+enum celltype {
 	DATA_NUMBER,
 	DATA_SYMBOL,
 	DATA_STRING,
-	DATA_PAIR
+	DATA_PAIR,
+	DATA_FN,
+	DATA_
 };
 
-struct data {
-	datatype type;
+struct cell {
+	celltype type;
 	union {
 		str str;
 		float num;
 		int sym;
 		struct {
-			data *left;
-			data *right;
+			cell *left;
+			cell *right;
 		};
+		cell *impl;
 	};
 };
 
@@ -106,29 +109,29 @@ readsymbolret readsymbol(str s) {
 
 #define nil nullptr
 
-static data *cons(data *a, data *b) {
+static cell *cons(cell *a, cell *b) {
 	assert(a != nil);
-	data *d = (data *)GC_MALLOC(sizeof(*d));
+	cell *d = (cell *)GC_MALLOC(sizeof(*d));
 	d->type = DATA_PAIR;
 	d->left = a;
 	d->right = b;
 }
 
-static data *car(data *a) {
+static cell *car(cell *a) {
 	assert(a != nil);
 	assert(a->type == DATA_PAIR);
 	return a->left;
 }
-static data *cdr(data *a) {
+static cell *cdr(cell *a) {
 	assert(a != nil);
 	assert(a->type == DATA_PAIR);
 	return a->right;
 }
 
-static data *reverse(data *a) {
+static cell *reverse(cell *a) {
 	assert(a != nil);
 	assert(a->type == DATA_PAIR);
-	data *b = nil;
+	cell *b = nil;
 	while (a != nil) {
 		b = cons(car(a), b);
 		a = cdr(a);
@@ -138,7 +141,7 @@ static data *reverse(data *a) {
 
 static std::unordered_map<int, char *> symbols;
 
-static str print(data *d) {
+static str print(cell *d) {
 	if (d == nil)
 		return S("nil");
 	if (d->type == DATA_NUMBER) {

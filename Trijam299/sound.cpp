@@ -37,7 +37,7 @@ void LoadSounds() {
 	sndf_explosion = LoadSound("snd/explosion.wav");
 	sndf_fire = LoadSound("snd/fire.wav");
 	sndf_menu1 = LoadSoundAlias(sndf_menu);
-	sndf_music = LoadSound("snd/music.wav");
+	sndf_music = LoadSound("snd/flua.ogg");
 	sndf_win = LoadSound("snd/win.wav");
 }
 

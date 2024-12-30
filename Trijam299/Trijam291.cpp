@@ -2,9 +2,9 @@
 
 // WHATEVER YOU DO, DO NOT ADD CLASSES PLEASE FOR THE LOVE OF GOD. OR, IF YOU DO, THINK ABOUT IT. THINK "DO I NEED THIS". THINK THAT AND THEN SAY /NO/!
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
  #define FORCE_EDITION 0
-#endif
+//#endif
 
 static bool updated = false;
 

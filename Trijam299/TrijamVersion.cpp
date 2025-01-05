@@ -237,6 +237,8 @@ struct State {
 	bool nextMap = false;
 	bool redFlag = false;
 	float moveWidth = 0;
+	float textRot = 0;
+	float textX = -1;
 } s;
 
 void LoadMap(const char *m /* map to load */) {
@@ -638,6 +640,17 @@ void DrawTransitions() {
 	}
 }
 
+void DrawMapNumber() {
+	float rotation = s.textRot;
+	const char *t = TextFormat("%d", s.M);
+	int wid = MeasureText(t, 20);
+	if (s.textX < 0)
+		s.textX = 5 + wid / 2.f;
+	s.textX = LerpDistRound(s.textX, 5 + wid / 2.f, GetFrameTime(), 0.7f, 1);
+	DrawTextPro(GetFontDefault(), t, { s.textX + 2, SCRHEI - 20 - 3 - 33 + 10 }, { wid / 2.f, 10 }, rotation, 20, 1, BLACK);
+	DrawTextPro(GetFontDefault(), t, { s.textX, SCRHEI - 20 - 5 - 33 + 10 }, { wid / 2.f, 10 }, rotation, 20, 1, WHITE);
+}
+
 void CheckWin() {
 	s.a.w = AOverlaps(T_GOALA);
 	s.b.w = BOverlaps(T_GOALB);
@@ -654,6 +667,10 @@ void CheckWin() {
 			s.nextMap = true;
 			s.preventMoving = false;
 				});
+		flux::to(0.3f)
+			->after(0.4f)
+			->with(&s.textRot, 360)
+			->oncomplete([] {s.textRot = 0; });
 	}
 }
 
@@ -752,8 +769,6 @@ void TrijamRender() {
 		DrawText(s.m.n, SCRWID - 5 - w, 5, 20, WHITE);
 	}
 
-	DrawTransitions();
-
 	{
 		const char *t = TextFormat("%d\n%d", s.m.M, s.tM);
 		const char *t2 = " level moves\n total moves";
@@ -768,6 +783,10 @@ void TrijamRender() {
 		DrawText(t2, s.moveWidth + 7, 7, 20, BLACK);
 		DrawText(t2, s.moveWidth + 5, 5, 20, WHITE);
 	}
+
+	DrawTransitions();
+
+	DrawMapNumber();
 
 	DrawKeybindBar("[Up] [Down] [Left] [Right]", "[U] Undo [R] Reset");
 	EndDrawing();

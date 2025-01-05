@@ -255,7 +255,7 @@ void LoadMap(const char *m /* map to load */) {
 	s.openFade = 1;
 	s.moveScale = 1;
 	s.g = flux::group();
-	s.g.to(0.4f)->with(&s.openFade, 0)->ease(flux::EASE_QUADIN);
+	s.g.to(0.6f)->with(&s.openFade, 0)->ease(flux::EASE_QUADIN);
 	int idx = 0;
 	while (idx < s.m.w * s.m.h && *m) {
 		int x = idx % s.m.w;

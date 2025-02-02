@@ -50,7 +50,7 @@ bool PickFlags() {
 		ClearBackground(BLACK);
 
 		// TODO: Replace this.
-		DrawText("Edition of Blocked:", 15, 15, 20, WHITE);
+		DrawText("Edition of Webberton:", 15, 15, 20, WHITE);
 
 		DrawLine(15, 45, 395, 45, overflow);
 		DrawLine(15, 85, 395, 85, overflow);
@@ -80,7 +80,7 @@ int main() {
 		RClose(r);
 	}*/
 
-	InitWindow(SCRWID, SCRHEI, "Blocked");
+	InitWindow(SCRWID, SCRHEI, "Webberton");
 	InitAudioDevice();
 	LoadSounds();
 	SetExitKey(0);

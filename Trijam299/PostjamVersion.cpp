@@ -22,15 +22,18 @@ float randf() {
 struct Textures {
 	Texture2D bg;
 	Texture2D player;
+	Texture2D door;
 
 	void Load() {
 		bg = LoadTexture("bg.png");
 		player = LoadTexture("player.png");
+		door = LoadTexture("door.png");
 	}
 
 	void Unload() {
 		UnloadTexture(bg);
 		UnloadTexture(player);
+		UnloadTexture(door);
 	}
 };
 
@@ -107,7 +110,7 @@ struct LevelPart {
 
 struct State {
 	Textures t;
-	flux::Group g;
+	//flux::Group g;
 	Camera2D c;
 	Player player;
 	float fadetime = 0;
@@ -470,7 +473,7 @@ void drawEnemy(Enemy *e) {
 		DrawRectangle(e->x - 150, 600 - 500, 300, 500, DARKGRAY);
 		break;
 	case 7:
-		DrawRectangle(e->x - 50, 600 - 200, 100, 200, ORANGE);
+		DrawTexture(s.t.door, e->x - s.t.door.width / 2, 600 - s.t.door.height, WHITE);
 		break;
 	}
 }
@@ -754,7 +757,6 @@ bool PostjamRunGame() {
 
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
-		s.g.update(GetFrameTime());
 
 		s.c.offset.x = GetRenderWidth() / 2;
 		s.c.offset.y = GetRenderHeight() / 2;

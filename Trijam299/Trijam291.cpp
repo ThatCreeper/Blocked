@@ -3,7 +3,7 @@
 // WHATEVER YOU DO, DO NOT ADD CLASSES PLEASE FOR THE LOVE OF GOD. OR, IF YOU DO, THINK ABOUT IT. THINK "DO I NEED THIS". THINK THAT AND THEN SAY /NO/!
 
 //#ifdef _DEBUG
- #define FORCE_EDITION 0
+// #define FORCE_EDITION 1
 //#endif
 
 static bool updated = false;
@@ -31,12 +31,12 @@ bool PickFlags() {
 			overflow = BLACK;
 		}
 
-		if (sel > 0) {
+		if (sel > 1) {
 			sel = 0;
 			overflow = BLUE;
 		}
 		else if (sel < 0) {
-			sel = 0;
+			sel = 1;
 			overflow = ORANGE;
 		}
 
@@ -53,13 +53,18 @@ bool PickFlags() {
 		DrawText("Edition of Webberton:", 15, 15, 20, WHITE);
 
 		DrawLine(15, 45, 395, 45, overflow);
-		DrawLine(15, 85, 395, 85, overflow);
+		DrawLine(15, 125, 395, 125, overflow);
 		//DrawLine(15, 165, 395, 165, overflow);
 
 		if (sel == 0) DrawRectangle(15, 50, 380, 30, DARKGRAY);
 		if (sel == 0) DrawRectangleLines(15, 50, 380, 30, WHITE);
 		if (sel == 0) DrawText("Version of the game made\n\nduring the three hours\n\nof the Trijam.", 460, 50, 20, WHITE);
 		DrawText("3-Hour Edition", 25, 55, 20, WHITE);
+
+		if (sel == 1) DrawRectangle(15, 90, 380, 30, DARKGRAY);
+		if (sel == 1) DrawRectangleLines(15, 90, 380, 30, WHITE);
+		if (sel == 1) DrawText("Version of the game\n\nwith bugfixes and new\n\nadditions.", 460, 50, 20, WHITE);
+		DrawText("Post-Jam Edition", 25, 95, 20, WHITE);
 
 		DrawKeybindBar("[Up] [Down]", "[Enter] Select");
 
@@ -69,6 +74,7 @@ bool PickFlags() {
 }
 
 bool TrijamRunGame();
+bool PostjamRunGame();
 
 int main() {
 	/*{
@@ -90,7 +96,7 @@ int main() {
 	if (!PickFlags())
 		goto END;
 
-	while (TrijamRunGame());
+	while (updated ? PostjamRunGame() : TrijamRunGame());
 
 END:
 	CloseWindow();

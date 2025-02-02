@@ -10,12 +10,12 @@
 
 static std::mt19937_64 rng;
 
-static inline float LerpPixelRound(float from, float to, float x, float max, int pixelSize = 16) {
+inline float LerpPixelRound(float from, float to, float x, float max, int pixelSize = 16) {
 	return LerpDistRound(from, to, x, max, 0.5f / pixelSize);
 }
 
 
-static float randf() {
+float randf() {
 	return (float)GetRandomValue(0, RAND_MAX - 1) / (float)RAND_MAX;
 }
 
@@ -71,7 +71,7 @@ struct Enemy {
 	float arrowtime[3];
 };
 
-/* 
+/*
 Kinds:
 0 -- opening
 1 -- drop high on left  --__
@@ -100,7 +100,7 @@ struct LevelPart {
 	std::optional<Enemy> enemies[max_enemies];
 };
 
-static struct State {
+struct State {
 	Textures t;
 	flux::Group g;
 	Camera2D c;
@@ -118,7 +118,7 @@ static struct State {
 	bool dialog = false;
 } s;
 
-static void webbingtonNewAsk() {
+void webbingtonNewAsk() {
 	s.reqnum++;
 	s.forcewebbingtonrequestdialog = true;
 	s.webbingtondesire = GetRandomValue(0, 1);
@@ -127,44 +127,83 @@ static void webbingtonNewAsk() {
 
 struct DialogLine {
 	const char *t;
-	Color c;
+	bool w;
 	int n;
 };
 
-static DialogLine lines[] = {
-	{ "My wife left me", PINK, 1 }, // 0
-	{ "You've told me this, Webberton", ORANGE, 2 }, // 1
-	{ "Well, I'm still thinking about it, Peter", PINK, 3 }, // 2
-	{ "That's not my name!", ORANGE, -1 }, // 3
-	{ "What's up with your hair?", ORANGE, 5}, // 4
-	{ "What do you mean?", PINK, 6 }, // 5
-	{ "It's funky", ORANGE, 7 }, // 6
-	{ "That's rude", PINK, -1 }, // 7
-	{ "You have issues, Webberton", ORANGE, 9 }, // 8
-	{ "That's on the nose, Pettorius", PINK, 10 }, // 9
-	{ "I don't have a nose..", ORANGE, 11 }, // 10
-	{ "Unlike YOU", ORANGE, 12 }, // 11
-	{ "I don't...", PINK, 13 }, // 12
-	{ "Do I have a nose?", PINK, -1 } // 13
+DialogLine lines[] = {
+	{ "My wife left me", true, 1 }, // 0
+	{ "You've told me this, Webberton", false, 2 }, // 1
+	{ "Well, I'm still thinking about it, Peter", true, 3 }, // 2
+	{ "That's not my name!", false, -1 }, // 3
+	{ "What's up with your hair?", false, 5}, // 4
+	{ "What do you mean?", true, 6 }, // 5
+	{ "It's funky", false, 7 }, // 6
+	{ "That's rude", true, -1 }, // 7
+	{ "You have issues, Webberton", false, 9 }, // 8
+	{ "That's on the nose, Pettorius", true, 10 }, // 9
+	{ "I don't have a nose..", false, 11 }, // 10
+	{ "Unlike YOU", false, 12 }, // 11
+	{ "I don't...", true, 13 }, // 12
+	{ "Do I have a nose?", true, -1 } // 13
 };
 
-static int startLines[] = { 0, 4, 8 };
+int startLines[] = { 0, 4, 8 };
 
-static bool hasRequest() {
+bool hasRequest() {
 	if (s.webbingtondesire == 0)
 		return s.player.goo >= s.webbingtonquant;
 	else
 		return s.player.bone >= s.webbingtonquant;
 }
 
-static void removeRequest() {
+void removeRequest() {
 	if (s.webbingtondesire == 0)
 		s.player.goo -= s.webbingtonquant;
 	else
 		s.player.bone -= s.webbingtonquant;
 }
 
-static void beginDialog() {
+void playVoice() {
+	if (!s.dialog)
+		return;
+	int r = GetRandomValue(0, 3);
+	bool w = s.dialogline < 0 || lines[s.dialogline].w;
+	if (w) {
+		switch (r) {
+		case 0:
+			PlaySound(SND_WEB1);
+			break;
+		case 1:
+			PlaySound(SND_WEB2);
+			break;
+		case 2:
+			PlaySound(SND_WEB3);
+			break;
+		case 3:
+			PlaySound(SND_WEB4);
+			break;
+		}
+	}
+	else {
+		switch (r) {
+		case 0:
+			PlaySound(SND_PTR1);
+			break;
+		case 1:
+			PlaySound(SND_PTR2);
+			break;
+		case 2:
+			PlaySound(SND_PTR3);
+			break;
+		case 3:
+			PlaySound(SND_PTR4);
+			break;
+		}
+	}
+}
+
+void beginDialog() {
 	s.dialog = true;
 	if (s.forcewebbingtonrequestdialog) {
 		s.dialogline = -1;
@@ -177,9 +216,10 @@ static void beginDialog() {
 	else {
 		s.dialogline = startLines[GetRandomValue(0, (sizeof(startLines) / sizeof(*startLines)) - 1)];
 	}
+	playVoice();
 }
 
-static void spawnEnemy(LevelPart *p, int kind, float x, float chance) {
+void spawnEnemy(LevelPart *p, int kind, float x, float chance) {
 	float r = randf();
 	if (chance != 1.f && r > (chance + p->incnum * 0.05f))
 		return;
@@ -209,7 +249,7 @@ static void spawnEnemy(LevelPart *p, int kind, float x, float chance) {
 	}
 }
 
-static int makePart(int kind, int from, bool right) {
+int makePart(int kind, int from, bool right) {
 	LevelPart *p = s.parts.data() + from; // invalid if from == -1
 	LevelPart np;
 	if (kind == 1 || kind == 2)
@@ -284,7 +324,7 @@ static int makePart(int kind, int from, bool right) {
 	return idx;
 }
 
-static bool enemyKillable(Enemy *e) {
+bool enemyKillable(Enemy *e) {
 	if (e->kind > 3)
 		return false;
 	if (e->kind == 3 && e->dashtime < 2.f)
@@ -292,9 +332,9 @@ static bool enemyKillable(Enemy *e) {
 	return true;
 }
 
-static void enterUnderworld();
+void enterUnderworld();
 
-static void killPlayer() {
+void killPlayer() {
 	s.overworld = true;
 	beginDialog();
 	s.player.blast /= 2;
@@ -302,7 +342,7 @@ static void killPlayer() {
 	s.player.goo /= 2;
 }
 
-static void updateEnemy(Enemy *e) {
+void updateEnemy(Enemy *e) {
 	if (e->kind == 0) {
 		bool playerToRight = s.player.x > e->x;
 		e->x += (playerToRight ? 60.f : -60.f) * GetFrameTime();
@@ -324,7 +364,7 @@ static void updateEnemy(Enemy *e) {
 			e->dashtime += GetFrameTime() * 0.5f;
 			bool playerToRight = s.player.x > e->x;
 			e->x += (playerToRight ? 400.f : -400.f) * GetFrameTime() * Clamp(e->dashtime - 0.0f, 0.f, 1.f);
-			bool overlaps = CheckCollisionCircles({ s.player.x, s.player.y - 30 }, 30, { e->x, 600 - 30}, 20);
+			bool overlaps = CheckCollisionCircles({ s.player.x, s.player.y - 30 }, 30, { e->x, 600 - 30 }, 20);
 			if (overlaps)
 				killPlayer();
 		}
@@ -389,7 +429,7 @@ static void updateEnemy(Enemy *e) {
 	}
 }
 
-static void drawEnemy(Enemy *e) {
+void drawEnemy(Enemy *e) {
 	switch (e->kind) {
 	case 0:
 		DrawRectangle(e->x - 30, 600 - 40, 60, 40, PINK);
@@ -426,7 +466,7 @@ static void drawEnemy(Enemy *e) {
 	}
 }
 
-static void drawPart() {
+void drawPart() {
 	LevelPart *p = &s.parts[s.player.level];
 	DrawText(TextFormat("#%d=%d", s.player.level, p->kind), 0, 0, 20, WHITE);
 
@@ -438,7 +478,7 @@ static void drawPart() {
 	}
 }
 
-static void resetLevel() {
+void resetLevel() {
 	LevelPart *p = &s.parts[s.player.level];
 
 	for (int i = 0; i < LevelPart::max_enemies; i++) {
@@ -461,7 +501,7 @@ static void resetLevel() {
 	s.player.bt = 0;
 }
 
-static void updatePlayer() {
+void updatePlayer() {
 	LevelPart *p = &s.parts[s.player.level];
 	s.player.x += (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT)) * 230.f * GetFrameTime();
 
@@ -583,17 +623,17 @@ static void updatePlayer() {
 	}
 }
 
-static void drawAlignRight(const char *s, int x, int y, int fontsize, Color color) {
+void drawAlignRight(const char *s, int x, int y, int fontsize, Color color) {
 	int wid = MeasureText(s, fontsize);
 	DrawText(s, x - wid, y, fontsize, color);
 }
 
-static void drawAlignCenter(const char *s, int x, int y, int fontsize, Color color) {
+void drawAlignCenter(const char *s, int x, int y, int fontsize, Color color) {
 	int wid = MeasureText(s, fontsize);
 	DrawText(s, x - wid / 2, y, fontsize, color);
 }
 
-static void drawPlayer() {
+void drawPlayer() {
 	DrawCircle(s.player.x, s.player.y - 30, 30, { 127, 0, 0, 255 });
 	DrawCircleLines(s.player.x, s.player.y - 30, 30, RED);
 
@@ -608,15 +648,16 @@ static void drawPlayer() {
 	drawAlignRight(TextFormat("%d Goo", s.player.goo), 800 - 10, 10 + 44, 20, LIGHTGRAY);
 }
 
-static void enterUnderworld() {
+void enterUnderworld() {
 	s.overworld = false;
 	s.parts.clear();
 	s.player.x = 400;
 	s.player.level = makePart(0, -1, true);
 	resetLevel();
+	PlaySound(SND_UNDERWORLD);
 }
 
-static void updateDialog() {
+void updateDialog() {
 	if (!s.dialog)
 		return;
 	if (IsKeyPressed(KEY_ENTER)) {
@@ -630,11 +671,12 @@ static void updateDialog() {
 		{
 			s.dialogline = lines[s.dialogline].n;
 			s.dialog = s.dialogline != -1;
+			playVoice();
 		}
 	}
 }
 
-bool TrijamRunGame() {
+bool PostjamRunGame() {
 	int fadein = 0;
 	bool restart = false;
 	s = {};
@@ -647,6 +689,8 @@ bool TrijamRunGame() {
 	beginDialog();
 
 	PlaySound(SND_START);
+	BeginDrawing();
+	EndDrawing();
 
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
@@ -703,7 +747,7 @@ bool TrijamRunGame() {
 			}
 			else {
 				l = lines[s.dialogline].t;
-				c = lines[s.dialogline].c;
+				c = lines[s.dialogline].w ? PINK : ORANGE;
 			}
 			drawAlignCenter(l, 400, 600 - 40, 20, c);
 		}
@@ -717,7 +761,7 @@ END:
 
 	SaveGlobState();
 	s.t.Unload();
-	
+
 
 	return restart;
 }

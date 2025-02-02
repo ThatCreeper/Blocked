@@ -23,17 +23,20 @@ struct Textures {
 	Texture2D bg;
 	Texture2D player;
 	Texture2D door;
+	Font fnt;
 
 	void Load() {
 		bg = LoadTexture("bg.png");
 		player = LoadTexture("player.png");
 		door = LoadTexture("door.png");
+		fnt = LoadFont("font.png");
 	}
 
 	void Unload() {
 		UnloadTexture(bg);
 		UnloadTexture(player);
 		UnloadTexture(door);
+		UnloadFont(fnt);
 	}
 };
 
@@ -480,7 +483,7 @@ void drawEnemy(Enemy *e) {
 
 void drawPart() {
 	LevelPart *p = &s.parts[s.player.level];
-	DrawText(TextFormat("#%d=%d", s.player.level, p->kind), 0, 0, 20, WHITE);
+	DrawTextEx(s.t.fnt, TextFormat("#%d=%d", s.player.level, p->kind), { 0, 0 }, 20, 2, WHITE);
 
 	if (p->kind == 1) {
 		DrawLine(0, 300, 400, 300, BLUE);
@@ -635,14 +638,14 @@ void updatePlayer() {
 	}
 }
 
-void drawAlignRight(const char *s, int x, int y, int fontsize, Color color) {
-	int wid = MeasureText(s, fontsize);
-	DrawText(s, x - wid, y, fontsize, color);
+void drawAlignRight(const char *str, int x, int y, int fontsize, Color color) {
+	float wid = MeasureTextEx(s.t.fnt, str, fontsize, fontsize / 10).x;
+	DrawTextEx(s.t.fnt, str, { x - wid, (float)y }, fontsize, fontsize / 10, color);
 }
 
-void drawAlignCenter(const char *s, int x, int y, int fontsize, Color color) {
-	int wid = MeasureText(s, fontsize);
-	DrawText(s, x - wid / 2, y, fontsize, color);
+void drawAlignCenter(const char *str, int x, int y, int fontsize, Color color) {
+	float wid = MeasureTextEx(s.t.fnt, str, fontsize, fontsize / 10).x;
+	DrawTextEx(s.t.fnt, str, { x - wid / 2, (float)y }, fontsize, fontsize / 10, color);
 }
 
 void drawPlayer() {
@@ -794,7 +797,7 @@ bool PostjamRunGame() {
 			drawPlayer();
 		}
 
-		DrawText(TextFormat("Goal: %d %s", s.webbingtonquant, s.webbingtondesire == 0 ? "Goo" : "Bone"), 20, 20, 20, LIGHTGRAY);
+		DrawTextEx(s.t.fnt, TextFormat("Goal: %d %s", s.webbingtonquant, s.webbingtondesire == 0 ? "Goo" : "Bone"), { 20, 20 }, 20, 2, LIGHTGRAY);
 
 		if (s.dialog) {
 			const char *l;

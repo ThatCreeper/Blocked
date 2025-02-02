@@ -21,13 +21,16 @@ float randf() {
 
 struct Textures {
 	Texture2D bg;
+	Texture2D player;
 
 	void Load() {
 		bg = LoadTexture("bg.png");
+		player = LoadTexture("player.png");
 	}
 
 	void Unload() {
 		UnloadTexture(bg);
+		UnloadTexture(player);
 	}
 };
 
@@ -44,6 +47,8 @@ struct Player {
 	float btx = 0;
 	float bty = 0;
 	float bt = 0;
+	float frametime = 0;
+	int frame = 0;
 };
 
 /*
@@ -167,8 +172,13 @@ void removeRequest() {
 void playVoice() {
 	if (!s.dialog)
 		return;
+
+	for (int i = SND_WEB1; i <= SND_PTR4; i++)
+		StopSound((SoundID)i);
+
 	int r = GetRandomValue(0, 3);
 	bool w = s.dialogline < 0 || lines[s.dialogline].w;
+
 	if (w) {
 		switch (r) {
 		case 0:
@@ -634,8 +644,50 @@ void drawAlignCenter(const char *s, int x, int y, int fontsize, Color color) {
 }
 
 void drawPlayer() {
-	DrawCircle(s.player.x, s.player.y - 30, 30, { 127, 0, 0, 255 });
-	DrawCircleLines(s.player.x, s.player.y - 30, 30, RED);
+	//DrawCircle(s.player.x, s.player.y - 30, 30, { 127, 0, 0, 255 });
+	//DrawCircleLines(s.player.x, s.player.y - 30, 30, RED);
+
+	s.player.frametime += GetFrameTime();
+	if (s.player.frametime >= 1.f / 6.f) {
+		s.player.frametime = 0;
+		s.player.frame++;
+		s.player.frame %= 3;
+	}
+
+	DrawTextureRec(s.t.player, { s.player.frame * 60.f, 0, 60, 60 }, { s.player.x - 30, s.player.y - 60 }, WHITE);
+
+	float mx = GetMouseX();
+	float my = GetMouseY();
+
+	// right eye
+	{
+		float x = mx - (s.player.x + 15 - 3);
+		float y = my - (s.player.y - 30 - 15 + 3);
+
+		float d = Dist(x, y);
+		if (d > 8) {
+			x /= d / 8;
+			y /= d / 8;
+		}
+		x += (s.player.x + 15 - 3);
+		y += (s.player.y - 30 - 15 + 3);
+		DrawCircle(x, y, 3, RED);
+	}
+
+	// left eye
+	{
+		float x = mx - (s.player.x - 15 + 3);
+		float y = my - (s.player.y - 30 - 15 + 3);
+
+		float d = Dist(x, y);
+		if (d > 8) {
+			x /= d / 8;
+			y /= d / 8;
+		}
+		x += (s.player.x - 15 + 3);
+		y += (s.player.y - 30 - 15 + 3);
+		DrawCircle(x, y, 3, RED);
+	}
 
 	if (s.player.bt > 0) {
 		//float at = atan2f(s.player.bty - s.player.bfy, s.player.btx - s.player.bfx);

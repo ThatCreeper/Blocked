@@ -37,6 +37,9 @@ Sound GetSound(SoundID id) {
 	case SND_MENU:
 		return(sndf_menu);
 		break;
+	case SND_MENU1:
+		return(sndf_menu1);
+		break;
 	case SND_START:
 		return(sndf_start);
 		break;

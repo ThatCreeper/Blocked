@@ -100,9 +100,8 @@ struct LevelPart {
 	std::optional<Enemy> enemies[max_enemies];
 };
 
-static struct State {
+struct State {
 	Textures t;
-	flux::Group g;
 	Camera2D c;
 	Player player;
 	float fadetime = 0;
@@ -116,7 +115,9 @@ static struct State {
 	int reqnum = 0;
 	int dialogline = 0;
 	bool dialog = false;
-} s;
+};
+
+static struct State s = {};
 
 static void webbingtonNewAsk() {
 	s.reqnum++;
@@ -650,7 +651,6 @@ bool TrijamRunGame() {
 
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
-		s.g.update(GetFrameTime());
 
 		s.c.offset.x = GetRenderWidth() / 2;
 		s.c.offset.y = GetRenderHeight() / 2;

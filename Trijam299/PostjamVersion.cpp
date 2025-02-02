@@ -343,10 +343,10 @@ bool enemyKillable(Enemy *e) {
 }
 
 void enterUnderworld();
+void enterOverworld();
 
 void killPlayer() {
-	s.overworld = true;
-	beginDialog();
+	enterOverworld();
 	s.player.blast /= 2;
 	s.player.bone /= 2;
 	s.player.goo /= 2;
@@ -433,8 +433,7 @@ void updateEnemy(Enemy *e) {
 	else if (e->kind == 7) {
 		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 50, 600 - 200, 100, 200 });
 		if (overlaps && IsKeyPressed(KEY_UP)) {
-			s.overworld = true;
-			beginDialog();
+			enterOverworld();
 		}
 	}
 }
@@ -698,6 +697,15 @@ void drawPlayer() {
 	drawAlignRight(TextFormat("%d Blast", s.player.blast), 800 - 10, 10, 20, LIGHTGRAY);
 	drawAlignRight(TextFormat("%d Bone", s.player.bone), 800 - 10, 10 + 22, 20, LIGHTGRAY);
 	drawAlignRight(TextFormat("%d Goo", s.player.goo), 800 - 10, 10 + 44, 20, LIGHTGRAY);
+}
+
+void enterOverworld() {
+	s.overworld = true;
+
+	for (int i = 0; i < SND_COUNT; i++)
+		StopSound((SoundID)i);
+
+	beginDialog();
 }
 
 void enterUnderworld() {

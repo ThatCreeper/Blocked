@@ -20,11 +20,14 @@ float randf() {
 }
 
 struct Textures {
+	Texture2D bg;
 
 	void Load() {
+		bg = LoadTexture("bg.png");
 	}
 
 	void Unload() {
+		UnloadTexture(bg);
 	}
 };
 
@@ -61,6 +64,11 @@ struct Enemy {
 	float dashtime;
 	bool chestopen;
 	bool right = true;
+	float arrowX[3];
+	float arrowY[3];
+	float arrowVx[3];
+	float arrowVy[3];
+	float arrowtime[3];
 };
 
 /* 
@@ -102,7 +110,74 @@ struct State {
 	float timesincedialog = 0;
 	float dialogtime = 0.8f;
 	bool overworld = true;
+	int webbingtondesire = 0;
+	int webbingtonquant = 0;
+	bool forcewebbingtonrequestdialog = false;
+	int reqnum = 0;
+	int dialogline = 0;
+	bool dialog = false;
 } s;
+
+void webbingtonNewAsk() {
+	s.reqnum++;
+	s.forcewebbingtonrequestdialog = true;
+	s.webbingtondesire = GetRandomValue(0, 1);
+	s.webbingtonquant = GetRandomValue(3, 5 * s.reqnum);
+}
+
+struct DialogLine {
+	const char *t;
+	Color c;
+	int n;
+};
+
+DialogLine lines[] = {
+	{ "My wife left me", PINK, 1 }, // 0
+	{ "You've told me this, Webberton", ORANGE, 2 }, // 1
+	{ "Well, I'm still thinking about it, Peter", PINK, 3 }, // 2
+	{ "That's not my name!", ORANGE, -1 }, // 3
+	{ "What's up with your hair?", ORANGE, 5}, // 4
+	{ "What do you mean?", PINK, 6 }, // 5
+	{ "It's funky", ORANGE, 7 }, // 6
+	{ "That's rude", PINK, -1 }, // 7
+	{ "You have issues, Webberton", ORANGE, 9 }, // 8
+	{ "That's on the nose, Pettorius", PINK, 10 }, // 9
+	{ "I don't have a nose..", ORANGE, 11 }, // 10
+	{ "Unlike YOU", ORANGE, 12 }, // 11
+	{ "I don't...", PINK, 13 }, // 12
+	{ "Do I have a nose?", PINK, -1 } // 13
+};
+
+int startLines[] = { 0, 4, 8 };
+
+bool hasRequest() {
+	if (s.webbingtondesire == 0)
+		return s.player.goo >= s.webbingtonquant;
+	else
+		return s.player.bone >= s.webbingtonquant;
+}
+
+void removeRequest() {
+	if (s.webbingtondesire == 0)
+		s.player.goo -= s.webbingtonquant;
+	else
+		s.player.bone -= s.webbingtonquant;
+}
+
+void beginDialog() {
+	s.dialog = true;
+	if (s.forcewebbingtonrequestdialog) {
+		s.dialogline = -1;
+		s.forcewebbingtonrequestdialog = false;
+	}
+	else if (hasRequest()) {
+		removeRequest();
+		s.dialogline = -2;
+	}
+	else {
+		s.dialogline = startLines[GetRandomValue(0, (sizeof(startLines) / sizeof(*startLines)) - 1)];
+	}
+}
 
 void spawnEnemy(LevelPart *p, int kind, float x, float chance) {
 	float r = randf();
@@ -113,6 +188,18 @@ void spawnEnemy(LevelPart *p, int kind, float x, float chance) {
 	em.spx = em.x = x * 800;
 	em.dashtime = 0;
 	em.chestopen = false;
+	for (int i = 0; i < 3; i++) {
+		em.arrowtime[i] = 0;
+		em.arrowX[i] = 0;
+		em.arrowY[i] = 600;
+		em.arrowVx[i] = 0;
+		em.arrowVy[i] = 0;
+	}
+	if (kind == 2) {
+		for (int i = 0; i < 3; i++) {
+			em.arrowtime[i] = randf() * i + 0.3f;
+		}
+	}
 	for (int i = 0; i < p->max_enemies; i++) {
 		std::optional<Enemy> *e = p->enemies + i;
 		if (e->has_value())
@@ -198,35 +285,73 @@ int makePart(int kind, int from, bool right) {
 }
 
 bool enemyKillable(Enemy *e) {
-	return e->kind <= 3;
+	if (e->kind > 3)
+		return false;
+	if (e->kind == 3 && e->dashtime < 2.f)
+		return false;
+	return true;
 }
 
 void enterUnderworld();
 
 void killPlayer() {
 	s.overworld = true;
+	beginDialog();
 	s.player.blast /= 2;
 	s.player.bone /= 2;
 	s.player.goo /= 2;
-	enterUnderworld();
 }
 
 void updateEnemy(Enemy *e) {
 	if (e->kind == 0) {
-
+		bool playerToRight = s.player.x > e->x;
+		e->x += (playerToRight ? 60.f : -60.f) * GetFrameTime();
+		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 20, 600 - 40, 40, 40 });
+		if (overlaps)
+			killPlayer();
 	}
 	else if (e->kind == 1) {
-
+		float mx = GetMouseX();
+		float my = GetMouseY();
+		mx -= s.player.x;
+		my -= s.player.y;
+		mx *= 1000;
+		my *= 1000;
+		mx += s.player.x;
+		my += s.player.y;
+		bool lookingAtMe = CheckCollisionCircleLine({ e->x, 600 - 30 }, 30, { s.player.x, s.player.y }, { mx, my });
+		if (!lookingAtMe) {
+			e->dashtime += GetFrameTime() * 0.5f;
+			bool playerToRight = s.player.x > e->x;
+			e->x += (playerToRight ? 400.f : -400.f) * GetFrameTime() * Clamp(e->dashtime - 0.0f, 0.f, 1.f);
+			bool overlaps = CheckCollisionCircles({ s.player.x, s.player.y - 30 }, 30, { e->x, 600 - 30}, 20);
+			if (overlaps)
+				killPlayer();
+		}
 	}
 	else if (e->kind == 2) {
+		e->dashtime += GetFrameTime();
+		for (int i = 0; i < 3; i++) {
+			if (e->arrowY[i] > 600 && e->dashtime > e->arrowtime[i]) {
+				e->arrowX[i] = e->x;
+				e->arrowY[i] = 600 - 30;
+				e->arrowVy[i] = -500;
+				e->arrowVx[i] = (s.player.x - e->x + randf() * 50) / 2.5f;
+			}
+			e->arrowVy[i] += 400 * GetFrameTime();
+			e->arrowY[i] += e->arrowVy[i] * GetFrameTime();
+			e->arrowX[i] += e->arrowVx[i] * GetFrameTime();
 
+			if (CheckCollisionPointCircle({ e->arrowX[i], e->arrowY[i] }, { s.player.x, s.player.y - 30 }, 30))
+				killPlayer();
+		}
 	}
 	else if (e->kind == 3) {
 		e->dashtime += GetFrameTime();
 		if (e->dashtime > 4.f)
 			e->dashtime = 0.f;
 		if (e->dashtime > 2.f) {
-			e->x += (e->right ? 100.f : -100.f) * GetFrameTime();
+			e->x += (e->right ? 400.f : -400.f) * GetFrameTime();
 		}
 		if (e->x > 800 - 20) {
 			e->x = 800 - 20;
@@ -236,16 +361,16 @@ void updateEnemy(Enemy *e) {
 			e->x = 20;
 			e->right = true;
 		}
-		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 20 }, 20, { e->x - 20, 600 - 40, 40, 40 });
+		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 20, 600 - 40, 40, 40 });
 		if (overlaps)
 			killPlayer();
 	}
 	else if (e->kind == 4) {
 		if (!e->chestopen) {
-			bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 20 }, 20, { e->x - 20, 600 - 40, 40, 40 });
+			bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 20, 600 - 40, 40, 40 });
 			if (overlaps) {
 				e->chestopen = true;
-				s.player.blast += 5;
+				s.player.blast += 2;
 			}
 		}
 	}
@@ -256,9 +381,10 @@ void updateEnemy(Enemy *e) {
 
 	}
 	else if (e->kind == 7) {
-		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 20 }, 20, { e->x - 50, 600 - 200, 100, 200 });
+		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 50, 600 - 200, 100, 200 });
 		if (overlaps && IsKeyPressed(KEY_UP)) {
 			s.overworld = true;
+			beginDialog();
 		}
 	}
 }
@@ -266,9 +392,16 @@ void updateEnemy(Enemy *e) {
 void drawEnemy(Enemy *e) {
 	switch (e->kind) {
 	case 0:
+		DrawRectangle(e->x - 30, 600 - 40, 60, 40, PINK);
+		break;
 	case 1:
+		DrawCircle(e->x, 600 - 30, 30, { 127, 0, 0, 255 });
+		break;
 	case 2:
-		DrawText(TextFormat("%d", e->kind), e->x, 600 - 20, 20, GREEN);
+		DrawCircleLines(e->x, 600 - 30, 30, PURPLE);
+		for (int i = 0; i < 3; i++) {
+			DrawCircle(e->arrowX[i], e->arrowY[i], 2, PURPLE);
+		}
 		break;
 	case 3:
 		DrawCircle(e->x, 600 - 20, 20, Fade(GREEN, e->dashtime > 2.f ? 1.f : 0.5f));
@@ -313,6 +446,12 @@ void resetLevel() {
 		if (!e.has_value())
 			continue;
 		e->x = e->spx;
+		e->dashtime = 0;
+		for (int i = 0; i < 3; i++) {
+			e->arrowY[i] = 600;
+			e->arrowVx[i] = 0;
+			e->arrowVy[i] = 0;
+		}
 	}
 
 	if ((p->kind == 1 || p->kind == 2) && !p->dropped)
@@ -324,7 +463,7 @@ void resetLevel() {
 
 void updatePlayer() {
 	LevelPart *p = &s.parts[s.player.level];
-	s.player.x += (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT)) * 120.f * GetFrameTime();
+	s.player.x += (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT)) * 230.f * GetFrameTime();
 
 	if (p->kind == 1) {
 		if (s.player.x > 400)
@@ -338,7 +477,7 @@ void updatePlayer() {
 	s.player.bt -= GetFrameTime();
 	// shoot
 	if (s.player.blast > 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-		// s.player.blast--;
+		s.player.blast--;
 		s.player.bt = 1;
 		s.player.bfx = s.player.x;
 		s.player.bfy = s.player.y - 20;
@@ -351,6 +490,25 @@ void updatePlayer() {
 		s.player.bty /= d;
 		s.player.btx += s.player.bfx;
 		s.player.bty += s.player.bfy;
+
+		for (int i = 0; i < p->max_enemies; i++) {
+			std::optional<Enemy> &e = p->enemies[i];
+			if (!e.has_value())
+				continue;
+			if (!enemyKillable(&*e))
+				continue;
+			if (CheckCollisionCircleLine({ e->x, 600 - 30 }, 30, { s.player.bfx, s.player.bfy }, { (s.player.btx - s.player.bfx) * 1000 + s.player.bfx, (s.player.bty - s.player.bfy) * 1000 + s.player.bfy })) {
+				if (e->kind == 0)
+					s.player.goo += 3;
+				if (e->kind == 1)
+					s.player.bone += 4;
+				if (e->kind == 2)
+					s.player.bone += 5;
+				if (e->kind == 3)
+					s.player.goo += 2;
+				e.reset();
+			}
+		}
 	}
 
 	if (s.player.y < 600 && p->dropped)
@@ -359,10 +517,10 @@ void updatePlayer() {
 	if (s.player.y > 600)
 		s.player.y = 600;
 
-	if (s.player.x < 20) {
+	if (s.player.x < 30) {
 		int *link = (p->kind == 1 && !p->dropped) ? &p->linkc : &p->linka;
 		if (*link == -2)
-			s.player.x = 20;
+			s.player.x = 30;
 		else {
 			/*if (*link == -1) {
 				if (p->kind == 1 || p->kind == 2) {
@@ -387,14 +545,14 @@ void updatePlayer() {
 				*link = part;
 			}
 			s.player.level = *link;
-			s.player.x = 800 - 20;
+			s.player.x = 800 - 30;
 			resetLevel();
 		}
 	}
-	if (s.player.x > 800 - 20) {
+	if (s.player.x > 800 - 30) {
 		int *link = (p->kind == 2 && !p->dropped) ? &p->linkc : &p->linkb;
 		if (*link == -2)
-			s.player.x = 800 - 20;
+			s.player.x = 800 - 30;
 		else {
 			/*if (*link == -1) {
 				if (p->kind == 1 || p->kind == 2) {
@@ -419,7 +577,7 @@ void updatePlayer() {
 				*link = part;
 			}
 			s.player.level = *link;
-			s.player.x = 20;
+			s.player.x = 30;
 			resetLevel();
 		}
 	}
@@ -430,8 +588,14 @@ void drawAlignRight(const char *s, int x, int y, int fontsize, Color color) {
 	DrawText(s, x - wid, y, fontsize, color);
 }
 
+void drawAlignCenter(const char *s, int x, int y, int fontsize, Color color) {
+	int wid = MeasureText(s, fontsize);
+	DrawText(s, x - wid / 2, y, fontsize, color);
+}
+
 void drawPlayer() {
-	DrawCircle(s.player.x, s.player.y - 20, 20, RED);
+	DrawCircle(s.player.x, s.player.y - 30, 30, { 127, 0, 0, 255 });
+	DrawCircleLines(s.player.x, s.player.y - 30, 30, RED);
 
 	if (s.player.bt > 0) {
 		//float at = atan2f(s.player.bty - s.player.bfy, s.player.btx - s.player.bfx);
@@ -452,6 +616,24 @@ void enterUnderworld() {
 	resetLevel();
 }
 
+void updateDialog() {
+	if (!s.dialog)
+		return;
+	if (IsKeyPressed(KEY_ENTER)) {
+		if (s.dialogline == -1)
+			s.dialog = false;
+		else if (s.dialogline == -2) {
+			webbingtonNewAsk();
+			beginDialog();
+		}
+		else
+		{
+			s.dialogline = lines[s.dialogline].n;
+			s.dialog = s.dialogline != -1;
+		}
+	}
+}
+
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
@@ -461,7 +643,8 @@ bool TrijamRunGame() {
 	s.c = { 0 };
 	s.c.zoom = 1;
 
-	enterUnderworld();
+	webbingtonNewAsk();
+	beginDialog();
 
 	PlaySound(SND_START);
 
@@ -476,7 +659,6 @@ bool TrijamRunGame() {
 		int mtx = m.x / 32;
 		int mty = m.y / 32;
 
-		updatePlayer();
 
 		BeginDrawing();
 		rlSetLineWidth(6);
@@ -484,10 +666,15 @@ bool TrijamRunGame() {
 		ClearBackground(BLACK);
 
 		if (s.overworld) {
-			BeginMode2D(s.c);
-			EndMode2D();
+			updateDialog();
+
+			if (!s.dialog && IsKeyPressed(KEY_DOWN))
+				enterUnderworld();
+
+			DrawTexture(s.t.bg, 0, 0, WHITE);
 		}
 		else {
+			updatePlayer();
 			drawPart();
 
 			for (int i = 0; i < LevelPart::max_enemies; i++) {
@@ -499,6 +686,26 @@ bool TrijamRunGame() {
 			}
 
 			drawPlayer();
+		}
+
+		DrawText(TextFormat("Goal: %d %s", s.webbingtonquant, s.webbingtondesire == 0 ? "Goo" : "Bone"), 20, 20, 20, LIGHTGRAY);
+
+		if (s.dialog) {
+			const char *l;
+			Color c;
+			if (s.dialogline == -1) {
+				l = TextFormat("Hey go get me %d %s", s.webbingtonquant, s.webbingtondesire == 0 ? "Goo" : "Bone");
+				c = PINK;
+			}
+			else if (s.dialogline == -2) {
+				l = "Thanks for those";
+				c = PINK;
+			}
+			else {
+				l = lines[s.dialogline].t;
+				c = lines[s.dialogline].c;
+			}
+			drawAlignCenter(l, 400, 600 - 40, 20, c);
 		}
 
 		DoFadeInAnimation(fadein);

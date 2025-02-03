@@ -26,6 +26,7 @@ struct Textures {
 	Font fnt;
 	Texture2D webstatue;
 	Texture2D archer;
+	Texture2D dasher;
 
 	void Load() {
 		bg = LoadTexture("bg.png");
@@ -34,6 +35,7 @@ struct Textures {
 		fnt = LoadFont("font.png");
 		webstatue = LoadTexture("webstatue.png");
 		archer = LoadTexture("archer.png");
+		dasher = LoadTexture("dasher.png");
 	}
 
 	void Unload() {
@@ -43,6 +45,7 @@ struct Textures {
 		UnloadFont(fnt);
 		UnloadTexture(webstatue);
 		UnloadTexture(archer);
+		UnloadTexture(dasher);
 	}
 };
 
@@ -477,7 +480,37 @@ void drawEnemy(Enemy *e) {
 		}
 		break;
 	case 3:
-		DrawCircle(e->x, 600 - 20, 20, Fade(GREEN, e->dashtime > 2.f ? 1.f : 0.5f));
+		//DrawCircle(e->x, 600 - 20, 20, Fade(GREEN, e->dashtime > 2.f ? 1.f : 0.5f));
+		DrawTextureRec(s.t.dasher, { 60.f * (s.frame % 3), 0, 60, 60 }, { e->x - 30, 600 - 60 }, Fade(WHITE, e->dashtime > 2 ? 1.f : 0.5f));
+		// right eye
+		{
+			float x = s.player.x - (e->x + 15 - 3);
+			float y = s.player.y - 30 - 15 - (600 - 30 - 15 + 6);
+
+			float d = Dist(x, y);
+			if (d > 8) {
+				x /= d / 8;
+				y /= d / 8;
+			}
+			x += (e->x + 15 - 3);
+			y += (600 - 30 - 15 + 6);
+			DrawCircle(x, y, 3, { 160, 177,10, 255 });
+		}
+
+		// left eye
+		{
+			float x = s.player.x - (e->x - 15 + 3);
+			float y = s.player.y - 30 - 15 - (600 - 30 - 15 + 6);
+
+			float d = Dist(x, y);
+			if (d > 8) {
+				x /= d / 8;
+				y /= d / 8;
+			}
+			x += (e->x - 15 + 3);
+			y += (600 - 30 - 15 + 6);
+			DrawCircle(x, y, 3, { 160, 177,10, 255 });
+		}
 		break;
 	case 4:
 		if (e->chestopen) {
@@ -579,8 +612,10 @@ void updatePlayer() {
 					s.player.bone += 4;
 				if (e->kind == 2)
 					s.player.bone += 5;
-				if (e->kind == 3)
+				if (e->kind == 3) {
 					s.player.goo += 2;
+					StopSound(SND_DASHER);
+				}
 				e.reset();
 			}
 		}

@@ -24,12 +24,14 @@ struct Textures {
 	Texture2D player;
 	Texture2D door;
 	Font fnt;
+	Texture2D webstatue;
 
 	void Load() {
 		bg = LoadTexture("bg.png");
 		player = LoadTexture("player.png");
 		door = LoadTexture("door.png");
 		fnt = LoadFont("font.png");
+		webstatue = LoadTexture("webstatue.png");
 	}
 
 	void Unload() {
@@ -37,6 +39,7 @@ struct Textures {
 		UnloadTexture(player);
 		UnloadTexture(door);
 		UnloadFont(fnt);
+		UnloadTexture(webstatue);
 	}
 };
 
@@ -470,7 +473,7 @@ void drawEnemy(Enemy *e) {
 		}
 		break;
 	case 5:
-		DrawRectangle(e->x - 60, 600 - 400, 120, 400, DARKPURPLE);
+		DrawTexture(s.t.webstatue, e->x - s.t.webstatue.width / 2, 600 - s.t.webstatue.height, WHITE);
 		break;
 	case 6:
 		DrawRectangle(e->x - 150, 600 - 500, 300, 500, DARKGRAY);

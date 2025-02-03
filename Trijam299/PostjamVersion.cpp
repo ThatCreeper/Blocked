@@ -25,6 +25,7 @@ struct Textures {
 	Texture2D door;
 	Font fnt;
 	Texture2D webstatue;
+	Texture2D archer;
 
 	void Load() {
 		bg = LoadTexture("bg.png");
@@ -32,6 +33,7 @@ struct Textures {
 		door = LoadTexture("door.png");
 		fnt = LoadFont("font.png");
 		webstatue = LoadTexture("webstatue.png");
+		archer = LoadTexture("archer.png");
 	}
 
 	void Unload() {
@@ -40,6 +42,7 @@ struct Textures {
 		UnloadTexture(door);
 		UnloadFont(fnt);
 		UnloadTexture(webstatue);
+		UnloadTexture(archer);
 	}
 };
 
@@ -56,8 +59,6 @@ struct Player {
 	float btx = 0;
 	float bty = 0;
 	float bt = 0;
-	float frametime = 0;
-	int frame = 0;
 };
 
 /*
@@ -130,6 +131,8 @@ struct State {
 	int reqnum = 0;
 	int dialogline = 0;
 	bool dialog = false;
+	float frametime = 0;
+	int frame = 0;
 } s;
 
 void webbingtonNewAsk() {
@@ -396,6 +399,7 @@ void updateEnemy(Enemy *e) {
 				e->arrowY[i] = 600 - 30;
 				e->arrowVy[i] = -500;
 				e->arrowVx[i] = (s.player.x - e->x + randf() * 50) / 2.5f;
+				PlaySound(SND_ARCHER);
 			}
 			e->arrowVy[i] += 400 * GetFrameTime();
 			e->arrowY[i] += e->arrowVy[i] * GetFrameTime();
@@ -456,7 +460,16 @@ void drawEnemy(Enemy *e) {
 		DrawCircle(e->x, 600 - 30, 30, { 127, 0, 0, 255 });
 		break;
 	case 2:
-		DrawCircleLines(e->x, 600 - 30, 30, PURPLE);
+		//DrawCircleLines(e->x, 600 - 30, 30, PURPLE);
+		DrawTextureRec(s.t.archer, { 60.f * (s.frame % 3), 0, 60, 60 }, { e->x - 30, 600.f - s.t.archer.height }, WHITE);
+		// top eye
+		{
+			DrawCircle(e->x, 600 - 30 - 8, 3, PURPLE);
+		}
+		// bottom eye
+		{
+			DrawCircle(Clamp(s.player.x, e->x - 10, e->x + 10), 600 - 30 + 8, 3, PURPLE);
+		}
 		for (int i = 0; i < 3; i++) {
 			DrawCircle(e->arrowX[i], e->arrowY[i], 2, PURPLE);
 		}
@@ -655,14 +668,7 @@ void drawPlayer() {
 	//DrawCircle(s.player.x, s.player.y - 30, 30, { 127, 0, 0, 255 });
 	//DrawCircleLines(s.player.x, s.player.y - 30, 30, RED);
 
-	s.player.frametime += GetFrameTime();
-	if (s.player.frametime >= 1.f / 6.f) {
-		s.player.frametime = 0;
-		s.player.frame++;
-		s.player.frame %= 3;
-	}
-
-	DrawTextureRec(s.t.player, { s.player.frame * 60.f, 0, 60, 60 }, { s.player.x - 30, s.player.y - 60 }, WHITE);
+	DrawTextureRec(s.t.player, { (s.frame % 3) * 60.f, 0, 60, 60 }, { s.player.x - 30, s.player.y - 60 }, WHITE);
 
 	float mx = GetMouseX();
 	float my = GetMouseY();
@@ -670,7 +676,7 @@ void drawPlayer() {
 	// right eye
 	{
 		float x = mx - (s.player.x + 15 - 3);
-		float y = my - (s.player.y - 30 - 15 + 3);
+		float y = my - (s.player.y - 30 - 15 + 6);
 
 		float d = Dist(x, y);
 		if (d > 8) {
@@ -678,14 +684,14 @@ void drawPlayer() {
 			y /= d / 8;
 		}
 		x += (s.player.x + 15 - 3);
-		y += (s.player.y - 30 - 15 + 3);
+		y += (s.player.y - 30 - 15 + 6);
 		DrawCircle(x, y, 3, RED);
 	}
 
 	// left eye
 	{
 		float x = mx - (s.player.x - 15 + 3);
-		float y = my - (s.player.y - 30 - 15 + 3);
+		float y = my - (s.player.y - 30 - 15 + 6);
 
 		float d = Dist(x, y);
 		if (d > 8) {
@@ -693,7 +699,7 @@ void drawPlayer() {
 			y /= d / 8;
 		}
 		x += (s.player.x - 15 + 3);
-		y += (s.player.y - 30 - 15 + 3);
+		y += (s.player.y - 30 - 15 + 6);
 		DrawCircle(x, y, 3, RED);
 	}
 
@@ -771,6 +777,11 @@ bool PostjamRunGame() {
 		int mtx = m.x / 32;
 		int mty = m.y / 32;
 
+		s.frametime += GetFrameTime();
+		if (s.frametime >= 1.f / 6.f) {
+			s.frametime = 0;
+			s.frame++;
+		}
 
 		BeginDrawing();
 		rlSetLineWidth(6);

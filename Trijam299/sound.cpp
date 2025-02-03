@@ -16,6 +16,7 @@ Sound sndf_ptr1;
 Sound sndf_ptr2;
 Sound sndf_ptr3;
 Sound sndf_ptr4;
+Sound sndf_archer;
 
 void LoadSounds() {
 	sndf_menu = LoadSound("snd/menu.wav");
@@ -30,6 +31,7 @@ void LoadSounds() {
 	sndf_ptr2 = LoadSound("snd/ptr2.ogg");
 	sndf_ptr3 = LoadSound("snd/ptr3.ogg");
 	sndf_ptr4 = LoadSound("snd/ptr4.ogg");
+	sndf_archer = LoadSound("snd/archer.ogg");
 }
 
 Sound GetSound(SoundID id) {
@@ -69,6 +71,9 @@ Sound GetSound(SoundID id) {
 		break;
 	case SND_PTR4:
 		return(sndf_ptr4);
+		break;
+	case SND_ARCHER:
+		return(sndf_archer);
 		break;
 	}
 }

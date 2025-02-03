@@ -13,6 +13,7 @@ enum SoundID {
 	SND_PTR2,
 	SND_PTR3,
 	SND_PTR4,
+	SND_ARCHER,
 
 	SND_COUNT
 };

@@ -446,6 +446,7 @@ void updateEnemy(Enemy *e) {
 			if (overlaps) {
 				e->chestopen = true;
 				s.player.blast += 2;
+				PlaySound(SND_CHEST);
 			}
 		}
 	}

@@ -2,6 +2,7 @@
 
 static SoundID snd_dont_repeat[] = {
 	SND_MENU1,
+	SND_DASHER,
 };
 
 Sound sndf_menu;
@@ -17,6 +18,7 @@ Sound sndf_ptr2;
 Sound sndf_ptr3;
 Sound sndf_ptr4;
 Sound sndf_archer;
+Sound sndf_dasher;
 
 void LoadSounds() {
 	sndf_menu = LoadSound("snd/menu.wav");
@@ -32,6 +34,7 @@ void LoadSounds() {
 	sndf_ptr3 = LoadSound("snd/ptr3.ogg");
 	sndf_ptr4 = LoadSound("snd/ptr4.ogg");
 	sndf_archer = LoadSound("snd/archer.ogg");
+	sndf_dasher = LoadSound("snd/dasher_present.ogg");
 }
 
 Sound GetSound(SoundID id) {
@@ -74,6 +77,9 @@ Sound GetSound(SoundID id) {
 		break;
 	case SND_ARCHER:
 		return(sndf_archer);
+		break;
+	case SND_DASHER:
+		return(sndf_dasher);
 		break;
 	}
 }

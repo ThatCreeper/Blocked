@@ -296,6 +296,7 @@ int makePart(int kind, int from, bool right) {
 		np.linkb = -1;
 		np.linkc = from;
 		spawnEnemy(&np, 7, right ? 0.25f : 0.75f, 1.f);
+		spawnEnemy(&np, 3, right ? 0.75f : 0.25f, 0.2f);
 		break;
 	case 3:
 		np.linkb = right ? -1 : from;
@@ -410,6 +411,7 @@ void updateEnemy(Enemy *e) {
 		}
 	}
 	else if (e->kind == 3) {
+		PlaySound(SND_DASHER);
 		e->dashtime += GetFrameTime();
 		if (e->dashtime > 4.f)
 			e->dashtime = 0.f;
@@ -424,7 +426,7 @@ void updateEnemy(Enemy *e) {
 			e->x = 20;
 			e->right = true;
 		}
-		bool overlaps = CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 20, 600 - 40, 40, 40 });
+		bool overlaps = e->dashtime > 2.f && CheckCollisionCircleRec({ s.player.x, s.player.y - 30 }, 30, { e->x - 20, 600 - 40, 40, 40 });
 		if (overlaps)
 			killPlayer();
 	}
@@ -511,6 +513,8 @@ void drawPart() {
 
 void resetLevel() {
 	LevelPart *p = &s.parts[s.player.level];
+
+	StopSound(SND_DASHER);
 
 	for (int i = 0; i < LevelPart::max_enemies; i++) {
 		std::optional<Enemy> &e = p->enemies[i];

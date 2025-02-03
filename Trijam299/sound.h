@@ -15,6 +15,8 @@ enum SoundID {
 	SND_PTR4,
 	SND_ARCHER,
 	SND_DASHER,
+	SND_BLAST,
+	SND_POP,
 
 	SND_COUNT
 };

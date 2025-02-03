@@ -598,6 +598,7 @@ void updatePlayer() {
 		s.player.bty /= d;
 		s.player.btx += s.player.bfx;
 		s.player.bty += s.player.bfy;
+		PlaySound(SND_BLAST);
 
 		for (int i = 0; i < p->max_enemies; i++) {
 			std::optional<Enemy> &e = p->enemies[i];
@@ -616,6 +617,7 @@ void updatePlayer() {
 					s.player.goo += 2;
 					StopSound(SND_DASHER);
 				}
+				PlaySound(SND_POP);
 				e.reset();
 			}
 		}

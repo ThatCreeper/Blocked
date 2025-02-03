@@ -165,10 +165,17 @@ DialogLine lines[] = {
 	{ "I don't have a nose..", false, 11 }, // 10
 	{ "Unlike YOU", false, 12 }, // 11
 	{ "I don't...", true, 13 }, // 12
-	{ "Do I have a nose?", true, -1 } // 13
+	{ "Do I have a nose?", true, -1 }, // 13
+	{ "Webberton...", false, 15 }, // 14
+	{ "Yes?", true, 16 }, // 15
+	{ "Why don't you ever go out into the underworld?", false, 17 }, // 16
+	{ "I have a lot of goo", true, 18}, // 17
+	{ "Do you know what half of 14 billion is?", true, 19 }, // 18
+	{ "7 bill-", false, 20 }, // 19
+	{ "Less than 14 billion.", true, -1 }
 };
 
-int startLines[] = { 0, 4, 8 };
+int startLines[] = { 0, 4, 8, 14 };
 
 bool hasRequest() {
 	if (s.webbingtondesire == 0)
@@ -401,8 +408,8 @@ void updateEnemy(Enemy *e) {
 			if (e->arrowY[i] > 600 && e->dashtime > e->arrowtime[i]) {
 				e->arrowX[i] = e->x;
 				e->arrowY[i] = 600 - 30;
-				e->arrowVy[i] = -500;
-				e->arrowVx[i] = (s.player.x - e->x + randf() * 50) / 2.5f;
+				e->arrowVy[i] = -500 + (randf() - 0.5f) * 10;
+				e->arrowVx[i] = (s.player.x - e->x + (randf() - 0.5f) * 10) / 2.5f;
 				PlaySound(SND_ARCHER);
 			}
 			e->arrowVy[i] += 400 * GetFrameTime();

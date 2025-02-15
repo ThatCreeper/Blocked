@@ -73,7 +73,9 @@ bool PickFlags() {
 	return false;
 }
 
-bool TrijamRunGame();
+namespace trijam {
+	bool TrijamRunGame();
+}
 bool PostjamRunGame();
 
 int main() {
@@ -96,7 +98,7 @@ int main() {
 	if (!PickFlags())
 		goto END;
 
-	while (updated ? PostjamRunGame() : TrijamRunGame());
+	while (updated ? PostjamRunGame() : trijam::TrijamRunGame());
 
 END:
 	CloseWindow();

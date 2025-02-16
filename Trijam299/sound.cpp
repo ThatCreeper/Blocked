@@ -23,6 +23,17 @@ Sound sndf_fire;
 Sound sndf_menu1;
 Sound sndf_music;
 Sound sndf_win;
+Sound sndf_hat;
+Sound sndf_snare;
+Sound sndf_bass;
+Sound sndf_c;
+Sound sndf_d;
+Sound sndf_e;
+Sound sndf_f;
+Sound sndf_g;
+Sound sndf_a;
+Sound sndf_b;
+Sound sndf_c2;
 
 void LoadSounds() {
 	sndf_menu = LoadSound("snd/menu.wav");
@@ -39,6 +50,17 @@ void LoadSounds() {
 	sndf_menu1 = LoadSoundAlias(sndf_menu);
 	sndf_music = LoadSound("snd/flua.ogg");
 	sndf_win = LoadSound("snd/win.wav");
+	sndf_hat = LoadSound("snd/hat.ogg");
+	sndf_snare = LoadSound("snd/snare.ogg");
+	sndf_bass = LoadSound("snd/bass.ogg");
+	sndf_c = LoadSound("snd/c.ogg");
+	sndf_d = LoadSound("snd/d.ogg");
+	sndf_e = LoadSound("snd/e.ogg");
+	sndf_f = LoadSound("snd/f.ogg");
+	sndf_g = LoadSound("snd/g.ogg");
+	sndf_a = LoadSound("snd/a.ogg");
+	sndf_b = LoadSound("snd/b.ogg");
+	sndf_c2 = LoadSound("snd/c2.ogg");
 }
 
 Sound GetSound(SoundID id) {
@@ -79,6 +101,28 @@ Sound GetSound(SoundID id) {
 		return sndf_music;
 	case SND_WIN:
 		return sndf_win;
+	case SND_HAT:
+		return sndf_hat;
+	case SND_SNARE:
+		return sndf_snare;
+	case SND_BASS:
+		return sndf_bass;
+	case SND_C:
+		return sndf_c;
+	case SND_D:
+		return sndf_d;
+	case SND_E:
+		return sndf_e;
+	case SND_F:
+		return sndf_f;
+	case SND_G:
+		return sndf_g;
+	case SND_A:
+		return sndf_a;
+	case SND_B:
+		return sndf_b;
+	case SND_C2:
+		return sndf_c2;
 	}
 }
 

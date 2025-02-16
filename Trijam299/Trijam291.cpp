@@ -50,7 +50,7 @@ bool PickFlags() {
 		ClearBackground(BLACK);
 
 		// TODO: Replace this.
-		DrawText("Edition of Webberton:", 15, 15, 20, WHITE);
+		DrawText("Edition of Shot:", 15, 15, 20, WHITE);
 
 		DrawLine(15, 45, 395, 45, overflow);
 		DrawLine(15, 85, 395, 85, overflow);
@@ -80,12 +80,13 @@ int main() {
 		RClose(r);
 	}*/
 
-	InitWindow(SCRWID, SCRHEI, "Webberton");
+	SetConfigFlags(FLAG_VSYNC_HINT);
+	InitWindow(SCRWID, SCRHEI, "Shot");
 	InitAudioDevice();
 	LoadSounds();
 	SetExitKey(0);
 
-	SetTargetFPS(30);
+	//SetTargetFPS(30);
 
 	if (!PickFlags())
 		goto END;

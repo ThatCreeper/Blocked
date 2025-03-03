@@ -266,8 +266,10 @@ bool TrijamRunGame() {
 
 		s.crot -= GetMouseWheelMove() * 9;
 
-		if (IsKeyPressed(KEY_ENTER))
+		if (IsKeyPressed(KEY_ENTER)) {
 			s.frozen = !s.frozen;
+			PlaySound(s.frozen ? SND_B : SND_C);
+		}
 
 		if (s.count > 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
 			Object o(GetMouseX(), GetMouseY(), s.blong ? 130.f : 95, s.wide ? 20 : 10, s.heavy == 2 ? 2.f : 0.0f, s.heavy == 0 ? 5.2f : 0.1f, 0.7f, false, s.b.size());
@@ -275,6 +277,7 @@ bool TrijamRunGame() {
 			s.b.push_back(o);
 			s.count--;
 			s.toff = -2;
+			PlaySound(SND_MENU);
 		}
 
 		//if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
@@ -286,6 +289,12 @@ bool TrijamRunGame() {
 		}
 
 		if (IsKeyReleased(KEY_R) || s.p()->Offscreen() || (s.p()->GetX() > 800 - 150)) {
+			if ((s.p()->GetX() > 800 - 150)) {
+				PlaySound(SND_WIN);
+			}
+			else {
+				PlaySound(SND_EXPLOSION);
+			}
 			ClearWorld();
 			LoadDemoLevel();
 		}
@@ -342,5 +351,6 @@ inline void Object::NonPlayerUpdate() {
 		s.count++;
 		s.toff = 4;
 		hasBeenOffscreen = true;
+		PlaySound(SND_SNARE);
 	}
 }

@@ -207,6 +207,8 @@ class ContactListener : public b2ContactListener {
 			AttemptJoin(contact->GetFixtureA()->GetBody(), contact->GetFixtureB()->GetBody(), contact, true);
 			AttemptJoin(contact->GetFixtureB()->GetBody(), contact->GetFixtureA()->GetBody(), contact, true);
 		}
+
+		PlaySound(SND_HAT);
 	}
 
 	void EndContact(b2Contact *contact) {
@@ -269,6 +271,7 @@ bool TrijamRunGame() {
 		if (IsKeyPressed(KEY_ENTER)) {
 			s.frozen = !s.frozen;
 			PlaySound(s.frozen ? SND_B : SND_C);
+			SetSoundVolume(GetSound(s.frozen ? SND_B : SND_C), 0.4f);
 		}
 
 		if (s.count > 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -294,6 +297,7 @@ bool TrijamRunGame() {
 			}
 			else {
 				PlaySound(SND_EXPLOSION);
+				SetSoundVolume(GetSound(SND_EXPLOSION), 0.4f);
 			}
 			ClearWorld();
 			LoadDemoLevel();

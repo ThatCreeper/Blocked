@@ -46,6 +46,7 @@ struct Object {
 	bool tryAttemptJoin = false;
 	b2Vec2 tryAttemptJoinWhere;
 	b2Body *tryAttemptJoinWith = nullptr;
+	bool tryAttemptJoinBoth = false;
 
 private:
 	Object(float x, float y, bool stat, int id) {
@@ -130,7 +131,7 @@ public:
 			tryAttemptJoin = false;
 			b2RevoluteJointDef jd;
 			jd.Initialize(b, tryAttemptJoinWith, tryAttemptJoinWhere);
-			jd.collideConnected = true;
+			jd.collideConnected = !tryAttemptJoinBoth;
 			jd.enableLimit = false;
 			physWorld->CreateJoint(&jd);
 		}
@@ -175,17 +176,23 @@ struct State {
 	int heavy = 0;
 	bool blong = false;
 	bool wide = false;
+	int v = 0;
 } s;
 
 class ContactListener : public b2ContactListener {
-	void AttemptJoin(b2Body *stat, b2Body *dyn, b2Contact *contact) {
+	void AttemptJoin(b2Body *stat, b2Body *dyn, b2Contact *contact, bool both) {
 		Object *o = &s.b[dyn->GetUserData().pointer];
+		if (both) {
+			if (s.b[dyn->GetUserData().pointer].isPlayer || s.b[stat->GetUserData().pointer].isPlayer)
+				return;
+		}
 		if (o->framesalive < 2) {
 			b2WorldManifold mani;
 			contact->GetWorldManifold(&mani);
 			o->tryAttemptJoin = true;
 			o->tryAttemptJoinWith = stat;
 			o->tryAttemptJoinWhere = mani.points[0];
+			o->tryAttemptJoinBoth = both;
 		}
 	}
 
@@ -193,12 +200,12 @@ class ContactListener : public b2ContactListener {
 		bool aStatic = contact->GetFixtureA()->GetBody()->GetType() == b2_staticBody;
 		bool bStatic = contact->GetFixtureB()->GetBody()->GetType() == b2_staticBody;
 		if (aStatic && !bStatic)
-			AttemptJoin(contact->GetFixtureA()->GetBody(), contact->GetFixtureB()->GetBody(), contact);
+			AttemptJoin(contact->GetFixtureA()->GetBody(), contact->GetFixtureB()->GetBody(), contact, false);
 		else if (!aStatic && bStatic)
-			AttemptJoin(contact->GetFixtureB()->GetBody(), contact->GetFixtureA()->GetBody(), contact);
+			AttemptJoin(contact->GetFixtureB()->GetBody(), contact->GetFixtureA()->GetBody(), contact, false);
 		else if (!aStatic && !bStatic) {
-			AttemptJoin(contact->GetFixtureA()->GetBody(), contact->GetFixtureB()->GetBody(), contact);
-			AttemptJoin(contact->GetFixtureB()->GetBody(), contact->GetFixtureA()->GetBody(), contact);
+			AttemptJoin(contact->GetFixtureA()->GetBody(), contact->GetFixtureB()->GetBody(), contact, true);
+			AttemptJoin(contact->GetFixtureB()->GetBody(), contact->GetFixtureA()->GetBody(), contact, true);
 		}
 	}
 
@@ -263,7 +270,7 @@ bool TrijamRunGame() {
 			s.frozen = !s.frozen;
 
 		if (s.count > 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-			Object o(GetMouseX(), GetMouseY(), s.blong ? 210 : 95, s.wide ? 40 : 10, s.heavy == 2 ? 2.f : 0.0f, s.heavy == 0 ? 5.2f : 2.6f, 0.7f, false, s.b.size());
+			Object o(GetMouseX(), GetMouseY(), s.blong ? 130.f : 95, s.wide ? 20 : 10, s.heavy == 2 ? 2.f : 0.0f, s.heavy == 0 ? 5.2f : 0.1f, 0.7f, false, s.b.size());
 			o.SetRotation(s.crot);
 			s.b.push_back(o);
 			s.count--;
@@ -274,7 +281,11 @@ bool TrijamRunGame() {
 		//	s.b.push_back(Object(GetMouseX(), GetMouseY(), 32, 32, 0.f, 0.0f, 0.2f, true, s.b.size()));
 		//}
 		
-		if (IsKeyReleased(KEY_R) || s.p()->Offscreen()) {
+		if (s.p()->GetX() > 800 - 150) {
+			s.v++;
+		}
+
+		if (IsKeyReleased(KEY_R) || s.p()->Offscreen() || (s.p()->GetX() > 800 - 150)) {
 			ClearWorld();
 			LoadDemoLevel();
 		}
@@ -291,7 +302,7 @@ bool TrijamRunGame() {
 		for (Object &o : s.b)
 			o.Draw();
 
-		DrawRectanglePro({ (float)GetMouseX(), (float)GetMouseY(), s.blong ? 210.f : 95.f, s.wide ? 40.f : 10.f }, { (s.blong ? 210.f : 95.f) / 2, (s.wide ? 40.f : 10.f) / 2 }, s.crot, Fade(GREEN, 0.5f));
+		DrawRectanglePro({ (float)GetMouseX(), (float)GetMouseY(), s.blong ? 130.f : 95.f, s.wide ? 20.f : 10.f }, { (s.blong ? 130.f : 95.f) / 2, (s.wide ? 20.f : 10.f) / 2 }, s.crot, Fade(GREEN, 0.5f));
 
 		if (s.frozen)
 			DrawFreezeOverlay();
@@ -305,7 +316,9 @@ bool TrijamRunGame() {
 			DrawText(TextFormat("%s %s %s", s.heavy == 0 ? "Heavy" : s.heavy == 1 ? "Light" : "Bouncy", s.blong ? "Long" : "Short", s.wide ? "Wide" : "Thin"), 20, 20 + 40 + 10, 20, WHITE);
 		}
 
-		DrawKeybindBar("[Left/Right] [LClick]", "[Enter] Freeze [R] Restart");
+		DrawText(TextFormat("%d", s.v), 20, SCRHEI - 45 - 40, 40, WHITE);
+
+		DrawKeybindBar("[Left/Right] [LClick] [Scroll]", "[Enter] Freeze [R] Restart");
 
 		DoFadeInAnimation(fadein);
 

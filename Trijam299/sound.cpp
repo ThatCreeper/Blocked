@@ -70,7 +70,12 @@ void UpdateAudio() {
 SoundInstance MakeSoundByPath(const char *id) {
 	FMOD::Studio::EventInstance *ei;
 	FMOD::Studio::EventDescription *ed;
-	FASSERT(sys->getEvent(id, &ed));
+	FMOD_RESULT res = sys->getEvent(id, &ed);
+	if (res == FMOD_ERR_EVENT_NOTFOUND) {
+		printf("SND: No event '%s'!\n", id);
+		return nullptr;
+	}
+	FASSERT(res);
 	FASSERT(ed->createInstance(&ei));
 	return ei;
 }
@@ -82,15 +87,21 @@ SoundInstance MakeSound(const char *id) {
 }
 
 void StartSound(SoundInstance ei) {
+	if (ei == nullptr)
+		return;
 	FASSERT(ei->start());
 	FASSERT(ei->release());
 }
 
 void SetSoundParameter(SoundInstance ei, const char *param, float val) {
+	if (ei == nullptr)
+		return;
 	FASSERT(ei->setParameterByName(param, val));
 }
 
 void StopSound(SoundInstance ei) {
+	if (ei == nullptr)
+		return;
 	FASSERT(ei->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT));
 }
 

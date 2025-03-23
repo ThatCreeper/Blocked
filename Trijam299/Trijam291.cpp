@@ -24,11 +24,11 @@ bool PickFlags() {
 	while (!WindowShouldClose()) {
 		if (IsKeyPressed(KEY_UP)) {
 			sel--;
-			FireSound("event:/menu");
+			FireSound("menu");
 			overflow = BLACK;
 		} if (IsKeyPressed(KEY_DOWN)) {
 			sel++;
-			FireSound("event:/menu");
+			FireSound("menu");
 			overflow = BLACK;
 		}
 

@@ -67,12 +67,18 @@ void UpdateAudio() {
 	FASSERT(sys->update());
 }
 
-SoundInstance MakeSound(const char *id) {
+SoundInstance MakeSoundByPath(const char *id) {
 	FMOD::Studio::EventInstance *ei;
 	FMOD::Studio::EventDescription *ed;
 	FASSERT(sys->getEvent(id, &ed));
 	FASSERT(ed->createInstance(&ei));
 	return ei;
+}
+
+SoundInstance MakeSound(const char *id) {
+	char path[256] = "event:/";
+	strcpy_s(path + 7, 256 - 7, id);
+	return MakeSoundByPath(path);
 }
 
 void StartSound(SoundInstance ei) {

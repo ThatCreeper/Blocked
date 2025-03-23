@@ -34,3 +34,18 @@ void LoadSounds();
 Sound GetSound(SoundID id);
 void PlaySound(SoundID id);
 void StopSound(SoundID id);
+
+namespace FMOD {
+	namespace Studio {
+		class EventInstance;
+	}
+}
+using SoundInstance = FMOD::Studio::EventInstance *;
+void InitFMod();
+void CloseFMod();
+void UpdateAudio();
+SoundInstance MakeSound(const char *id);
+void StartSound(SoundInstance snd);
+void SetSoundParameter(SoundInstance snd, const char *param, float val);
+void StopSound(SoundInstance snd);
+void FireSound(const char *id);

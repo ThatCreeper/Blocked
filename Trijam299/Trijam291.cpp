@@ -1,9 +1,10 @@
 #include "global.h"
+#include <fmod_studio.hpp>
 
 // WHATEVER YOU DO, DO NOT ADD CLASSES PLEASE FOR THE LOVE OF GOD. OR, IF YOU DO, THINK ABOUT IT. THINK "DO I NEED THIS". THINK THAT AND THEN SAY /NO/!
 
 //#ifdef _DEBUG
- #define FORCE_EDITION 0
+// #define FORCE_EDITION 0
 //#endif
 
 static bool updated = false;
@@ -23,11 +24,11 @@ bool PickFlags() {
 	while (!WindowShouldClose()) {
 		if (IsKeyPressed(KEY_UP)) {
 			sel--;
-			PlaySound(SND_MENU);
+			FireSound("event:/menu");
 			overflow = BLACK;
 		} if (IsKeyPressed(KEY_DOWN)) {
 			sel++;
-			PlaySound(SND_MENU);
+			FireSound("event:/menu");
 			overflow = BLACK;
 		}
 
@@ -63,6 +64,7 @@ bool PickFlags() {
 
 		DrawKeybindBar("[Up] [Down]", "[Enter] Select");
 
+		UpdateAudio();
 		EndDrawing();
 	}
 	return false;
@@ -82,8 +84,9 @@ int main() {
 
 	SetConfigFlags(FLAG_VSYNC_HINT);
 	InitWindow(SCRWID, SCRHEI, "Shot");
-	InitAudioDevice();
-	LoadSounds();
+	
+	InitFMod();
+	
 	SetExitKey(0);
 
 	//SetTargetFPS(30);
@@ -94,5 +97,6 @@ int main() {
 	while (TrijamRunGame());
 
 END:
+	CloseFMod();
 	CloseWindow();
 }

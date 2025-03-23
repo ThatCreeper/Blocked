@@ -38,6 +38,7 @@ bool TrijamRunGame() {
 
 		DoFadeInAnimation(fadein);
 
+		UpdateAudio();
 		EndDrawing();
 	}
 

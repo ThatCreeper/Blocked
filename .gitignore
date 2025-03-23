@@ -371,3 +371,6 @@ run/*.exe
 run/*.zip
 vcpkg_installed/
 outhtml/*.zip
+
+# FMOD
+run/**/*.bank

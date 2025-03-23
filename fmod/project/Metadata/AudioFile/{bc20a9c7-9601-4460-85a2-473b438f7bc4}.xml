@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{bc20a9c7-9601-4460-85a2-473b438f7bc4}">
+		<property name="assetPath">
+			<value>flua.ogg</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>115.2</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{bd66de4b-56db-4a39-8465-df76496fc45d}</destination>
+		</relationship>
+	</object>
+</objects>

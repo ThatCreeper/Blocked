@@ -27,7 +27,7 @@ bool TrijamRunGame() {
 	s = {};
 	s.t.Load();
 
-	PlaySound(SND_START);
+	FireSound("startgame");
 
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());

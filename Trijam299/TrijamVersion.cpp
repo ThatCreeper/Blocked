@@ -4,8 +4,12 @@
 
 #include "global.h"
 
+json entities;
+Image collisionI;
+
 #define TEXTURES \
-	T(frozen, "frozen.png")
+	T(frozen, "frozen.png") \
+	T(map, "ldtk/map/simplified/Level_0/_composite.png")
 struct Textures {
 #define T(a, b) Texture2D a;
 	TEXTURES
@@ -29,11 +33,19 @@ struct State {
 	SoundInstance mus;
 } s;
 
+void LoadEntities() {
+	collisionI = LoadImage("ldtk/map/simplified/Level_0/Collision-int.png");
+	char *fileText = LoadFileText("ldtk/map/simplified/Level_0/data.json");
+	entities = json::parse(fileText)["entities"];
+	UnloadFileText(fileText);
+}
+
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
 	s = {};
 	s.t.Load();
+	LoadEntities();
 	s.mus = MakeSound("bgmus");
 	SetSoundParameter(s.mus, "intensity", 0);
 	StartSound(s.mus);
@@ -59,6 +71,8 @@ bool TrijamRunGame() {
 
 		BeginDrawing();
 		ClearBackground(BLACK);
+
+		DrawTexture(s.t.map, 0, 0, WHITE);
 
 		DoFadeInAnimation(fadein);
 

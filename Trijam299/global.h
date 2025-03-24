@@ -12,3 +12,5 @@
 #include "helpers.h"
 #include "globstate.h"
 #include "flux.h"
+#include <nlohmann/json.hpp>
+using namespace nlohmann;

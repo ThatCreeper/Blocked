@@ -4,17 +4,24 @@
 
 #include "global.h"
 
+#define TEXTURES \
+	T(frozen, "frozen.png")
 struct Textures {
-	Texture2D frozen;
+#define T(a, b) Texture2D a;
+	TEXTURES
 
 	void Load() {
-		frozen = LoadTexture("frozen.png");
+#define T(a, b) a = LoadTexture(b);
+		TEXTURES
 	}
 
 	void Unload() {
-		UnloadTexture(frozen);
+#define T(a, b) UnloadTexture(a);
+		TEXTURES
 	}
 };
+#undef T
+#undef TEXTURES
 
 struct State {
 	Textures t;

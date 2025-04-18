@@ -134,20 +134,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Entity.cpp" />
     <ClCompile Include="flux.cpp" />
     <ClCompile Include="gfx.cpp" />
     <ClCompile Include="globstate.cpp" />
+    <ClCompile Include="Process.cpp" />
+    <ClCompile Include="SamplePlayer.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="Trijam291.cpp" />
     <ClCompile Include="TrijamVersion.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="constants.h" />
+    <ClInclude Include="ControllerAccess.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="flux.h" />
     <ClInclude Include="flux_easings.h" />
+    <ClInclude Include="GameAction.h" />
     <ClInclude Include="gfx.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="globstate.h" />
     <ClInclude Include="helpers.h" />
+    <ClInclude Include="Process.h" />
+    <ClInclude Include="SamplePlayer.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="version.h" />
     <ClInclude Include="version_debug.h" />

@@ -1,8 +1,6 @@
 #pragma once
 
-#define SCRWID 800
-#define SCRHEI 600
-
+#include "constants.h"
 #include <raylib.h>
 #include <rlgl.h>
 #include <cmath>

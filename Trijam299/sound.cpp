@@ -1,7 +1,9 @@
 #include "global.h"
+#ifdef _USE_FMOD_
 #include <fmod_studio.hpp>
 #include <unordered_map>
 #include <string>
+#endif
 
 void LoadSounds() {
 	// noop
@@ -20,6 +22,7 @@ void StopSound(SoundID id) {
 	// noop
 }
 
+#ifdef _USE_FMOD_
 FMOD::Studio::System *sys;
 FMOD::Studio::Bank *bank;
 FMOD::Studio::Bank *strbank;
@@ -108,3 +111,13 @@ void StopSound(SoundInstance ei) {
 void FireSound(const char *id) {
 	StartSound(MakeSound(id));
 }
+#else
+void InitFMod() {}
+void CloseFMod() {}
+void UpdateAudio() {}
+SoundInstance MakeSound(const char *id) { return nullptr; }
+void StartSound(SoundInstance snd) {}
+void SetSoundParameter(SoundInstance snd, const char *param, float val) {}
+void StopSound(SoundInstance snd) {}
+void FireSound(const char *id) {}
+#endif

@@ -1,12 +1,13 @@
 module;
 
 #include "entity.h"
-import std;
 
 export module world;
 
+import std;
+
 export struct world {
-	std::deque<std::unique_ptr<entity>> entities;
+	std::list<std::unique_ptr<entity>> entities;
 
 	world() = default;
 	~world() = default;
@@ -20,7 +21,7 @@ export struct world {
 	}
 
 	void remove(entity *e) {
-		std::erase_if(entities, [](auto _e) { &*_e == e });
+		std::erase_if(entities, [e](const auto &_e) { return &*_e == e; });
 	}
 
 	void clear() {

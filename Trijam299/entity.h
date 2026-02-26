@@ -7,14 +7,28 @@ enum signal {
 	SIGNAL_DESCRIBE
 };
 
-struct entityRenderer;
+struct entity;
 struct world;
+
+struct entityRenderer {
+	entityRenderer(entity *_e) {}
+	virtual ~entityRenderer() = default;
+	virtual void render(entity *_e) = 0;
+};
 
 struct entity {
 	flux::Group tw;
 	std::unique_ptr<entityRenderer> rend;
 	world *w; // set by world.add
 	
+	virtual ~entity() = default;
+	entity() {
+		spawnRenderer();
+	}
+
+	virtual void spawnRenderer() {}
+	virtual void init() {}
+
 	virtual void update() {
 		tw.update(GetFrameTime());
 	}
@@ -26,13 +40,10 @@ struct entity {
 	}
 };
 
-struct entityRenderer {
-	virtual void render(entity *_e) = 0;
-};
-
 #define ER_E(t) t *e = (t *)_e;
 #define E_SLS virtual void accept(signal s, void *p) override { switch(s) {
 #define E_SL(s) case s: sig##s(p); break;
 #define E_SLF(fallback) default: fallback::accept(s, p); break;
 #define E_SLE }}
 #define E_SIGNAL(s, ptr) void sig##s(void *ptr)
+#define E_REND(rendererClass) virtual void spawnRenderer() override { rend = new rendererClass(this); }

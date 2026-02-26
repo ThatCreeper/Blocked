@@ -1,4 +1,5 @@
 #include "global.h"
+#include "rlImGui.h"
 
 // WHATEVER YOU DO, DO NOT ADD CLASSES PLEASE FOR THE LOVE OF GOD. OR, IF YOU DO, THINK ABOUT IT. THINK "DO I NEED THIS". THINK THAT AND THEN SAY /NO/!
 
@@ -83,7 +84,7 @@ int main() {
 
 	SetConfigFlags(FLAG_VSYNC_HINT);
 	InitWindow(SCRWID, SCRHEI, "Shot");
-	
+	rlImGuiSetup(true);
 	InitFMod();
 	
 	SetExitKey(0);
@@ -97,5 +98,6 @@ int main() {
 
 END:
 	CloseFMod();
+	rlImGuiShutdown();
 	CloseWindow();
 }

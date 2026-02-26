@@ -1,8 +1,12 @@
 #include "raylib.h"
+#include "rlImGui.h"
+#include "imgui.h"
 
 #include "external/glad.h"
 
 #include "global.h"
+
+import world;
 
 json entities;
 Image collisionI;
@@ -173,6 +177,13 @@ bool TrijamRunGame() {
 
 		BeginDrawing();
 		ClearBackground(BLACK);
+		rlImGuiBegin();
+
+		ImGui::Begin("Test Window");
+
+		ImGui::Text("Hello!");
+
+		ImGui::End();
 
 		DrawTexture(s.t.map, 0, 0, WHITE);
 		DrawRectangle(s.px, s.py, 5, 8, RED);
@@ -180,6 +191,7 @@ bool TrijamRunGame() {
 		DoFadeInAnimation(fadein);
 
 		UpdateAudio();
+		rlImGuiEnd();
 		EndDrawing();
 	}
 

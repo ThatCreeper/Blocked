@@ -374,3 +374,6 @@ outhtml/*.zip
 
 # FMOD
 run/**/*.bank
+
+# ImGui
+run/imgui.ini

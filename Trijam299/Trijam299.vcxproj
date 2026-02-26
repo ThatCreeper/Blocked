@@ -147,6 +147,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)\raylib\include;C:\Program Files %28x86%29\FMOD SoundSystem\FMOD Studio API Windows\api\studio\inc;C:\Program Files %28x86%29\FMOD SoundSystem\FMOD Studio API Windows\api\core\inc</AdditionalIncludeDirectories>
+      <BuildStlModules>true</BuildStlModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -193,8 +194,10 @@
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="Trijam291.cpp" />
     <ClCompile Include="TrijamVersion.cpp" />
+    <ClCompile Include="world.ixx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="entity.h" />
     <ClInclude Include="flux.h" />
     <ClInclude Include="flux_easings.h" />
     <ClInclude Include="gfx.h" />

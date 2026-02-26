@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <list>
 #include "flux_easings.h"
 
 /* Based on the lua library "flux" by rxi. 
@@ -175,7 +176,7 @@ namespace flux {
 		 */
 		float totalremainingtime();
 	private:
-		std::vector<std::shared_ptr<Tween>> tweens_;
+		std::list<std::shared_ptr<Tween>> tweens_;
 
 		friend class Tween;
 	};

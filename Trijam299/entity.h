@@ -23,7 +23,9 @@ struct entity {
 	world *w; // set by world.add
 	bool removed = false;
 
-	virtual ~entity() = default;
+	virtual ~entity() {
+		if (!removed) onRemove();
+	};
 	entity() {
 		spawnRenderer();
 	}
@@ -38,7 +40,7 @@ struct entity {
 	virtual void accept(signal s, void *p) {}
 
 	inline void render() {
-		rend->render(this);
+		if (rend) rend->render(this);
 	}
 
 	virtual void onRemove() {}
@@ -49,6 +51,7 @@ struct entity {
 #define E_SL(s) case s: sig##s(p); break;
 #define E_SLF(fallback) default: fallback::accept(s, p); break;
 #define E_SLE }}
-#define E_SIGNAL(s, ptr) void sig##s(void *ptr)
+#define E_SIGNAL(s) void sig##s(void *ptr)
 #define E_SIGP(type) type *param = (type *)ptr
+#define E_SIGPAR(super, s, type) super::sig##s(ptr); E_SIGP(type)
 #define E_REND(rendererClass) virtual void spawnRenderer() override { rend = new rendererClass(this); }

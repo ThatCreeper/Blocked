@@ -5,6 +5,7 @@
 #include "external/glad.h"
 
 #include "global.h"
+#include "entity.h"
 
 import world;
 import stateinator;
@@ -84,7 +85,20 @@ struct State {
 	Shaders s;
 	flux::Group g;
 	SoundInstance mus;
+	world w;
 } s;
+
+struct testent : entity {
+	E_SLS
+		E_SL(SIGNAL_GUI);
+	E_SLE
+
+	E_SIGNAL(SIGNAL_GUI) {
+		if (ImGui::CollapsingHeader("testent")) {
+			if (ImGui::Button("kill")) w->remove(this);
+		}
+	}
+};
 
 void LoadEntities() {
 	// TODO: memory leak
@@ -144,15 +158,21 @@ bool TrijamRunGame() {
 
 	RenderTexture2D render = LoadRenderTexture(SCRWID, SCRHEI);
 
+	s.w.add(new testent);
+
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
 		s.g.update(GetFrameTime());
+
+		s.w.update();
 
 		BeginTextureMode(render);
 
 		ClearBackground(BLACK);
 
 		DrawRectangle(50, 50, 80, 80, WHITE);
+
+		s.w.render();
 
 		EndTextureMode();
 
@@ -169,6 +189,9 @@ bool TrijamRunGame() {
 
 		s.t.Gui();
 		s.s.Gui();
+		ImGui::Begin("Entities");
+		s.w.broadcast(SIGNAL_GUI, nullptr);
+		ImGui::End();
 
 		DoFadeInAnimation(fadein);
 

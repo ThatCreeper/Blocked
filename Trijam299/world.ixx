@@ -9,11 +9,6 @@ import std;
 export struct world {
 	std::list<std::unique_ptr<entity>> entities;
 
-	world() = default;
-	~world() = default;
-	world(const world &w) = delete;
-	world(world &&w) = delete;
-
 	// Entity should be added with `new` and should not be deleted
 	void add(entity *e) {
 		e->w = this;

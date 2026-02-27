@@ -35,14 +35,6 @@ struct State {
 	Textures t;
 	flux::Group g;
 	SoundInstance mus;
-
-	int px;
-	float pfx;
-	float pvx;
-	int py;
-	float pfy;
-	float pvy;
-	float timeSinceMove = 0;
 } s;
 
 void LoadEntities() {
@@ -92,8 +84,6 @@ bool TrijamRunGame() {
 	for (const auto &p : entities["Player"]) {
 		if (p["customFields"]["id"] != 0)
 			continue;
-		s.px = p["x"];
-		s.py = p["y"];
 		break;
 	}
 	s.mus = MakeSound("bgmus");
@@ -102,91 +92,44 @@ bool TrijamRunGame() {
 
 	FireSound("startgame");
 
+	RenderTexture2D render = LoadRenderTexture(SCRWID, SCRHEI);
+	Shader shader = LoadShader(NULL, "blur.fs");
+
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
 		s.g.update(GetFrameTime());
 
-		if (IsKeyPressed(KEY_ONE)) {
-			SetSoundParameter(s.mus, "intensity", 0);
-		}
-		else if (IsKeyPressed(KEY_TWO)) {
-			SetSoundParameter(s.mus, "intensity", 1);
-		}
-		else if(IsKeyPressed(KEY_THREE)) {
-			SetSoundParameter(s.mus, "intensity", 2);
-		}
-		else if(IsKeyPressed(KEY_FOUR)) {
-			SetSoundParameter(s.mus, "intensity", 3);
-		}
+		BeginTextureMode(render);
 
-		bool playerOnGround = CollidesWorld(s.px, s.py + 8, 5, 1);
-		s.timeSinceMove += GetFrameTime();
-		float timeMod = 1.f / (1 + s.timeSinceMove * 5);
+		ClearBackground(RED);
 
-		s.pvx *= std::powf(0.7f, timeMod);
-		if (IsKeyDown(KEY_A)) {
-			s.pvx -= 0.5 * timeMod;
-			s.timeSinceMove = 0;
-		}
-		if (IsKeyDown(KEY_D)) {
-			s.pvx += 0.5 * timeMod;
-			s.timeSinceMove = 0;
-		}
-		if (playerOnGround && s.pvy > 0) {
-			s.pvy = 0;
-		}
-		if (playerOnGround && IsKeyPressed(KEY_W)) {
-			s.pvy = -3;
-			s.timeSinceMove = 0;
-		}
-		s.pvy += timeMod * (s.pvy > 0 ? 0.1 : 0.3);
-		s.pfy += s.pvy * timeMod;
-		while (s.pfy > 0) {
-			if (CollidesWorld(s.px, s.py + 1, 5, 8)) {
-				s.pfy = 0;
-				break;
-			}
-			s.py++;
-			s.pfy--;
-		}
-		while (s.pfy < 0) {
-			if (CollidesWorld(s.px, s.py - 1, 5, 8)) {
-				s.pfy = 0;
-				break;
-			}
-			s.py--;
-			s.pfy++;
-		}
-		s.pfx += s.pvx * timeMod;
-		while (s.pfx > 0) {
-			if (CollidesWorld(s.px + 1, s.py, 5, 8)) {
-				s.pfx = 0;
-				break;
-			}
-			s.px++;
-			s.pfx--;
-		}
-		while (s.pfx < 0) {
-			if (CollidesWorld(s.px - 1, s.py, 5, 8)) {
-				s.pfx = 0;
-				break;
-			}
-			s.px--;
-			s.pfx++;
-		}
+		DrawRectangle(50, 50, 80, 80, GREEN);
+
+		EndTextureMode();
 
 		BeginDrawing();
-		ClearBackground(BLACK);
 		rlImGuiBegin();
+		
+		ClearBackground(BLACK);
+
+		BeginShaderMode(shader);
+
+		DrawTexturePro(render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE);
+
+		EndShaderMode();
 
 		ImGui::Begin("Test Window");
 
 		ImGui::Text("Hello!");
+		ImGui::Text("FPS: %f", 1.0 / GetFrameTime());
+
+		if (ImGui::Button("Reload Shader")) {
+			UnloadShader(shader);
+			shader = LoadShader(nullptr, "blur.fs");
+		}
 
 		ImGui::End();
 
-		DrawTexture(s.t.map, 0, 0, WHITE);
-		DrawRectangle(s.px, s.py, 5, 8, RED);
 
 		DoFadeInAnimation(fadein);
 

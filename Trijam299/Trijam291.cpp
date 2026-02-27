@@ -89,7 +89,7 @@ int main() {
 	
 	SetExitKey(0);
 
-	SetTargetFPS(30);
+	//SetTargetFPS(30);
 
 	if (!PickFlags())
 		goto END;

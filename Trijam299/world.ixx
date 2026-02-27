@@ -21,21 +21,26 @@ export struct world {
 	}
 
 	void remove(entity *e) {
-		std::erase_if(entities, [e](const auto &_e) { return &*_e == e; });
+		e->onRemove();
+		e->removed = true;
 	}
 
 	void clear() {
+		for (auto &e : entities) e->onRemove();
 		entities.clear();
 	}
 
 	void update() {
 		for (auto &e : entities) {
+			if (e->removed) continue;
 			e->update();
 		}
+		std::erase_if(entities, [](const auto &e) { return e->removed; });
 	}
 
 	void render() {
 		for (auto &e : entities) {
+			if (e->removed) continue;
 			e->render();
 		}
 	}

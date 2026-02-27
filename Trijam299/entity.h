@@ -4,7 +4,8 @@
 #include "raylib.h"
 
 enum signal {
-	SIGNAL_DESCRIBE
+	SIGNAL_DESCRIBE,
+	SIGNAL_GUI
 };
 
 struct entity;
@@ -20,7 +21,8 @@ struct entity {
 	flux::Group tw;
 	std::unique_ptr<entityRenderer> rend;
 	world *w; // set by world.add
-	
+	bool removed = false;
+
 	virtual ~entity() = default;
 	entity() {
 		spawnRenderer();
@@ -38,6 +40,8 @@ struct entity {
 	inline void render() {
 		rend->render(this);
 	}
+
+	virtual void onRemove() {}
 };
 
 #define ER_E(t) t *e = (t *)_e;
@@ -46,4 +50,5 @@ struct entity {
 #define E_SLF(fallback) default: fallback::accept(s, p); break;
 #define E_SLE }}
 #define E_SIGNAL(s, ptr) void sig##s(void *ptr)
+#define E_SIGP(type) type *param = (type *)ptr
 #define E_REND(rendererClass) virtual void spawnRenderer() override { rend = new rendererClass(this); }

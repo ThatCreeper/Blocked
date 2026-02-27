@@ -31,11 +31,57 @@ struct Textures {
 		TEXTURES
 #undef T
 	}
+
+	void Gui() {
+		ImGui::Begin("Textures");
+		ImGui::BeginGroup();
+
+#define T(a, b) if (ImGui::Button(#a)) { UnloadTexture(a); a = LoadTexture(b); }
+		TEXTURES
+#undef T
+
+		ImGui::EndGroup();
+		ImGui::End();
+	}
 };
 #undef TEXTURES
 
+#define SHADERS \
+	T(blur, nullptr, "blur.fs")
+struct Shaders {
+#define T(a, b, c) Shader a;
+	SHADERS
+#undef T
+
+	void Load() {
+#define T(a, b, c) a = LoadShader(b, c);
+		SHADERS
+#undef T
+	}
+
+	void Unload() {
+#define T(a, b, c) UnloadShader(a);
+		SHADERS
+#undef T
+	}
+
+	void Gui() {
+		ImGui::Begin("Shaders");
+		ImGui::BeginGroup();
+
+#define T(a, b, c) if (ImGui::Button(#a)) { Shader s = LoadShader(b, c); if (s.id) { UnloadShader(a); a = s; } }
+		SHADERS
+#undef T
+
+		ImGui::EndGroup();
+		ImGui::End();
+	}
+};
+#undef SHADERS
+
 struct State {
 	Textures t;
+	Shaders s;
 	flux::Group g;
 	SoundInstance mus;
 } s;
@@ -83,6 +129,7 @@ bool TrijamRunGame() {
 	bool restart = false;
 	s = {};
 	s.t.Load();
+	s.s.Load();
 	LoadEntities();
 	for (const auto &p : entities["Player"]) {
 		if (p["customFields"]["id"] != 0)
@@ -96,7 +143,6 @@ bool TrijamRunGame() {
 	FireSound("startgame");
 
 	RenderTexture2D render = LoadRenderTexture(SCRWID, SCRHEI);
-	Shader shader = LoadShader(NULL, "blur.fs");
 
 	while (!WindowShouldClose()) {
 		flux::update(GetFrameTime());
@@ -104,9 +150,9 @@ bool TrijamRunGame() {
 
 		BeginTextureMode(render);
 
-		ClearBackground(RED);
+		ClearBackground(BLACK);
 
-		DrawRectangle(50, 50, 80, 80, GREEN);
+		DrawRectangle(50, 50, 80, 80, WHITE);
 
 		EndTextureMode();
 
@@ -115,24 +161,14 @@ bool TrijamRunGame() {
 		
 		ClearBackground(BLACK);
 
-		BeginShaderMode(shader);
+		BeginShaderMode(s.s.blur);
 
 		DrawTexturePro(render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE);
 
 		EndShaderMode();
 
-		ImGui::Begin("Test Window");
-
-		ImGui::Text("Hello!");
-		ImGui::Text("FPS: %f", 1.0 / GetFrameTime());
-
-		if (ImGui::Button("Reload Shader")) {
-			UnloadShader(shader);
-			shader = LoadShader(nullptr, "blur.fs");
-		}
-
-		ImGui::End();
-
+		s.t.Gui();
+		s.s.Gui();
 
 		DoFadeInAnimation(fadein);
 
@@ -146,7 +182,7 @@ END:
 	StopSound(s.mus);
 	SaveGlobState();
 	s.t.Unload();
-	
+	s.s.Unload();
 
 	return restart;
 }

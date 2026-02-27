@@ -9,7 +9,8 @@ uniform vec4 colDiffuse;
 out vec4 finalColor;
 
 const vec2 size = vec2(800, 600);
-const int range = 2;
+const int range = 5;
+const float dist = 3.0;
 
 void main()
 {
@@ -19,12 +20,20 @@ void main()
 
     for (int i = -range; i <= range; i++) {
         for (int j = -range; j <= range; j++) {
-            sum += texture(texture0, fragTexCoord + vec2(i, j) / size);
+            vec2 pos = vec2(i, j);
+            vec4 p = texture(texture0, fragTexCoord + pos / size * dist);
+            // p -= 0.1;
+            p /= length(pos / range);
+            sum += max(vec4(0), p);
         }
     }
 
-    sum /= 4 * range * range;
+    int axis = range * 2 + 1;
+    // sum /= axis * axis;
+    // sum *= 3;
+    // sum *= 1.2;
 
 	finalColor = sum;
+    // finalColor /= (1 + finalColor);
     finalColor.a = 1;
 }

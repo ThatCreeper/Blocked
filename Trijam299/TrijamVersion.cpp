@@ -7,6 +7,7 @@
 #include "global.h"
 
 import world;
+import stateinator;
 
 json entities;
 Image collisionI;

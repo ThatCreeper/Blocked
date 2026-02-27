@@ -200,6 +200,7 @@
     <ClCompile Include="imgui_widgets.cpp" />
     <ClCompile Include="rlImGui.cpp" />
     <ClCompile Include="sound.cpp" />
+    <ClCompile Include="stateinator.ixx" />
     <ClCompile Include="Trijam291.cpp" />
     <ClCompile Include="TrijamVersion.cpp" />
     <ClCompile Include="world.ixx" />

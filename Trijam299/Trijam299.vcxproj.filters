@@ -72,6 +72,9 @@
     <ClCompile Include="sound.cpp">
       <Filter>Source Files\Stabilized</Filter>
     </ClCompile>
+    <ClCompile Include="stateinator.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="global.h">

@@ -18,18 +18,20 @@ Image collisionI;
 struct Textures {
 #define T(a, b) Texture2D a;
 	TEXTURES
+#undef T
 
 	void Load() {
 #define T(a, b) a = LoadTexture(b);
 		TEXTURES
+#undef T
 	}
 
 	void Unload() {
 #define T(a, b) UnloadTexture(a);
 		TEXTURES
+#undef T
 	}
 };
-#undef T
 #undef TEXTURES
 
 struct State {

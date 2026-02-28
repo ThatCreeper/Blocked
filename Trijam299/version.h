@@ -42,3 +42,6 @@ struct R {
 #endif
 
 SER_BIN(int32_t, "%d");
+
+template <typename T>
+void Serialize(T) = delete;

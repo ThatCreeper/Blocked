@@ -15,7 +15,8 @@ Image collisionI;
 
 #define TEXTURES \
 	T(frozen, "frozen.png") \
-	T(map, "ldtk/map/simplified/Level_0/_composite.png")
+	T(map, "ldtk/map/simplified/Level_0/_composite.png") \
+	T(baselut, "baselut.png")
 struct Textures {
 #define T(a, b) Texture2D a;
 	TEXTURES
@@ -49,20 +50,32 @@ struct Textures {
 
 #define SHADERS \
 	T(blur, nullptr, "blur.fs")
+#define UNIFORMS \
+	U(blur, lut, "lut")
 struct Shaders {
 #define T(a, b, c) Shader a;
-	SHADERS
+	SHADERS;
 #undef T
+#define U(a, b, c) int uniform_##a##_##b;
+	UNIFORMS;
+#undef U
 
 	void Load() {
 #define T(a, b, c) a = LoadShader(b, c);
-		SHADERS
+		SHADERS;
 #undef T
+		LoadUniforms();
+	}
+
+	void LoadUniforms() {
+#define U(a, b, c) uniform_##a##_##b = GetShaderLocation(a, c);
+		UNIFORMS;
+#undef U
 	}
 
 	void Unload() {
 #define T(a, b, c) UnloadShader(a);
-		SHADERS
+		SHADERS;
 #undef T
 	}
 
@@ -70,8 +83,8 @@ struct Shaders {
 		ImGui::Begin("Shaders");
 		ImGui::BeginGroup();
 
-#define T(a, b, c) if (ImGui::Button(#a)) { Shader s = LoadShader(b, c); if (s.id) { UnloadShader(a); a = s; } }
-		SHADERS
+#define T(a, b, c) if (ImGui::Button(#a)) { Shader s = LoadShader(b, c); if (s.id) { UnloadShader(a); a = s; LoadUniforms(); } }
+		SHADERS;
 #undef T
 
 		ImGui::EndGroup();
@@ -79,6 +92,7 @@ struct Shaders {
 	}
 };
 #undef SHADERS
+#undef UNIFORMS
 
 struct State {
 	Textures t;
@@ -93,7 +107,7 @@ struct positional : entity {
 
 	E_SLS
 		E_SL(SIGNAL_GUI);
-	E_SLE
+	E_SLE;
 
 	E_SIGNAL(SIGNAL_GUI) {
 		if (guiHeader("positional")) {
@@ -222,6 +236,7 @@ bool TrijamRunGame() {
 		ClearBackground(BLACK);
 
 		BeginShaderMode(s.s.blur);
+		SetShaderValueTexture(s.s.blur, s.s.uniform_blur_lut, s.t.baselut);
 
 		DrawTexturePro(render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE);
 

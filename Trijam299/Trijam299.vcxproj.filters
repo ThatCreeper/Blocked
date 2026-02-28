@@ -25,15 +25,18 @@
     <Filter Include="Source Files\Stabilized">
       <UniqueIdentifier>{3b09b437-2856-48d3-97ec-0179ce056393}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Savestate">
+      <UniqueIdentifier>{7b1fea3f-0deb-4fbf-94c7-0b1a6c87f57b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Savestate">
+      <UniqueIdentifier>{af357f05-0921-41c8-8ae1-9253d11818d3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Trijam291.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TrijamVersion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="globstate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="world.ixx">
@@ -75,18 +78,12 @@
     <ClCompile Include="stateinator.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="globstate.cpp">
+      <Filter>Source Files\Savestate</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="global.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="version.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="version_norm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="version_debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="helpers.h">
@@ -133,6 +130,15 @@
     </ClInclude>
     <ClInclude Include="sound.h">
       <Filter>Header Files\Stabilized</Filter>
+    </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files\Savestate</Filter>
+    </ClInclude>
+    <ClInclude Include="version_debug.h">
+      <Filter>Header Files\Savestate</Filter>
+    </ClInclude>
+    <ClInclude Include="version_norm.h">
+      <Filter>Header Files\Savestate</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -30,6 +30,7 @@ Sound GetSound(SoundID id);
 void PlaySound(SoundID id);
 void StopSound(SoundID id);
 
+#ifdef _USE_FMOD_
 namespace FMOD {
 	namespace Studio {
 		class EventInstance;
@@ -44,3 +45,4 @@ void StartSound(SoundInstance snd);
 void SetSoundParameter(SoundInstance snd, const char *param, float val);
 void StopSound(SoundInstance snd);
 void FireSound(const char *id);
+#endif

@@ -24,11 +24,11 @@ bool PickFlags() {
 	while (!WindowShouldClose()) {
 		if (IsKeyPressed(KEY_UP)) {
 			sel--;
-			FireSound("menu");
+			PlaySound(SND_MENU);
 			overflow = BLACK;
 		} if (IsKeyPressed(KEY_DOWN)) {
 			sel++;
-			FireSound("menu");
+			PlaySound(SND_MENU);
 			overflow = BLACK;
 		}
 
@@ -64,7 +64,6 @@ bool PickFlags() {
 
 		DrawKeybindBar("[Up] [Down]", "[Enter] Select");
 
-		UpdateAudio();
 		EndDrawing();
 	}
 	return false;
@@ -85,7 +84,9 @@ int main() {
 	SetConfigFlags(FLAG_VSYNC_HINT);
 	InitWindow(SCRWID, SCRHEI, "Shot");
 	rlImGuiSetup(true);
-	InitFMod();
+	InitAudioDevice();
+
+	LoadSounds();
 	
 	SetExitKey(0);
 
@@ -97,7 +98,7 @@ int main() {
 	while (TrijamRunGame());
 
 END:
-	CloseFMod();
+	//CloseFMod();
 	rlImGuiShutdown();
 	CloseWindow();
 }

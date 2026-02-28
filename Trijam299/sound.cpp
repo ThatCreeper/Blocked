@@ -15,7 +15,7 @@ void LoadSounds() {
 }
 
 Sound GetSound(SoundID id) {
-	return loadedSounds[SND_COUNT];
+	return loadedSounds[id];
 }
 
 void PlaySound(SoundID id) {
@@ -117,12 +117,12 @@ void FireSound(const char *id) {
 	StartSound(MakeSound(id));
 }
 #else
-void InitFMod() {}
-void CloseFMod() {}
-void UpdateAudio() {}
-SoundInstance MakeSound(const char *id) { return nullptr; }
-void StartSound(SoundInstance snd) {}
-void SetSoundParameter(SoundInstance snd, const char *param, float val) {}
-void StopSound(SoundInstance snd) {}
-void FireSound(const char *id) {}
+//void InitFMod() {}
+//void CloseFMod() {}
+//void UpdateAudio() {}
+//SoundInstance MakeSound(const char *id) { return nullptr; }
+//void StartSound(SoundInstance snd) {}
+//void SetSoundParameter(SoundInstance snd, const char *param, float val) {}
+//void StopSound(SoundInstance snd) {}
+//void FireSound(const char *id) {}
 #endif

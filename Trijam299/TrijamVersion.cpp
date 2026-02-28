@@ -84,18 +84,61 @@ struct State {
 	Textures t;
 	Shaders s;
 	flux::Group g;
-	SoundInstance mus;
 	world w;
 } s;
 
-struct testent : entity {
+struct positional : entity {
+	int x = 0;
+	int y = 0;
+
 	E_SLS
 		E_SL(SIGNAL_GUI);
 	E_SLE
 
 	E_SIGNAL(SIGNAL_GUI) {
-		if (ImGui::CollapsingHeader("testent")) {
+		if (guiHeader("positional")) {
 			if (ImGui::Button("kill")) w->remove(this);
+			ImGui::DragInt("x", &x);
+			ImGui::DragInt("y", &y);
+
+			ImGui::TreePop();
+		}
+	}
+};
+
+struct rectRend : entityRenderer {
+	Color color_;
+	int wid_;
+	int hei_;
+	int offX_;
+	int offY_;
+
+	rectRend(entity *_e, Color color, int wid, int hei, int offX, int offY) : entityRenderer(_e) {
+		color_ = color;
+		wid_ = wid;
+		hei_ = hei;
+		offX_ = offX;
+		offY_ = offY;
+	}
+
+	void render(entity *_e) override {
+		ER_E(positional);
+		DrawRectangle(e->x + offX_, e->y + offY_, wid_, hei_, color_);
+	}
+};
+
+struct testent : positional {
+	E_REND(new rectRend(this, BLUE, 32, 32, 0, 0));
+
+	E_SLS
+		E_SL(SIGNAL_GUI);
+	E_SLE;
+
+	E_SIGNAL(SIGNAL_GUI) {
+		if (guiHeader("testent")) {
+			E_SIGPAR(positional, SIGNAL_GUI);
+
+			ImGui::TreePop();
 		}
 	}
 };
@@ -150,11 +193,8 @@ bool TrijamRunGame() {
 			continue;
 		break;
 	}
-	s.mus = MakeSound("bgmus");
-	SetSoundParameter(s.mus, "intensity", 0);
-	StartSound(s.mus);
 
-	FireSound("startgame");
+	PlaySound(SND_START);
 
 	RenderTexture2D render = LoadRenderTexture(SCRWID, SCRHEI);
 
@@ -195,14 +235,11 @@ bool TrijamRunGame() {
 
 		DoFadeInAnimation(fadein);
 
-		UpdateAudio();
 		rlImGuiEnd();
 		EndDrawing();
 	}
 
 END:
-
-	StopSound(s.mus);
 	SaveGlobState();
 	s.t.Unload();
 	s.s.Unload();

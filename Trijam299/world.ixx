@@ -13,6 +13,7 @@ export struct world {
 	void add(entity *e) {
 		e->w = this;
 		entities.emplace_back(e);
+		e->spawnRenderer();
 	}
 
 	void remove(entity *e) {

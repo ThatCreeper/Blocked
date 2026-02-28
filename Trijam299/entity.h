@@ -2,6 +2,7 @@
 
 #include "flux.h"
 #include "raylib.h"
+#include "imgui.h"
 
 enum signal {
 	SIGNAL_DESCRIBE,
@@ -26,9 +27,7 @@ struct entity {
 	virtual ~entity() {
 		if (!removed) onRemove();
 	};
-	entity() {
-		spawnRenderer();
-	}
+	entity() {}
 
 	virtual void spawnRenderer() {}
 	virtual void init() {}
@@ -44,6 +43,11 @@ struct entity {
 	}
 
 	virtual void onRemove() {}
+
+	inline bool guiHeader(const char *name) {
+		const char *processed = TextFormat("%s %d", name, ((int)this) & 0x1FF);
+		return ImGui::TreeNode(processed);
+	}
 };
 
 #define ER_E(t) t *e = (t *)_e;
@@ -53,5 +57,5 @@ struct entity {
 #define E_SLE }}
 #define E_SIGNAL(s) void sig##s(void *ptr)
 #define E_SIGP(type) type *param = (type *)ptr
-#define E_SIGPAR(super, s, type) super::sig##s(ptr); E_SIGP(type)
-#define E_REND(rendererClass) virtual void spawnRenderer() override { rend = new rendererClass(this); }
+#define E_SIGPAR(super, s) super::sig##s(ptr)
+#define E_REND(rendererClass) virtual void spawnRenderer() override { rend = std::unique_ptr<entityRenderer>(rendererClass); }

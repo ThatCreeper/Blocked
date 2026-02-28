@@ -5,22 +5,27 @@
 #include <string>
 #endif
 
+#ifndef _USE_FMOD_
+std::array<Sound, SND_COUNT> loadedSounds;
+
 void LoadSounds() {
-	// noop
+#define S(a, b) loadedSounds[a] = LoadSound(b);
+	RAYSNDS
+#undef S
 }
 
 Sound GetSound(SoundID id) {
-	// noop
-	return { 0 };
+	return loadedSounds[SND_COUNT];
 }
 
 void PlaySound(SoundID id) {
-	// noop
+	PlaySound(GetSound(id));
 }
 
 void StopSound(SoundID id) {
-	// noop
+	StopSound(GetSound(id));
 }
+#endif
 
 #ifdef _USE_FMOD_
 FMOD::Studio::System *sys;

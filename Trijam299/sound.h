@@ -1,31 +1,26 @@
 #pragma once
 
+#define RAYSNDS \
+	S(SND_MENU, "snd/menu.wav") \
+	S(SND_START, "snd/start.wav") \
+	S(SND_DIE, "snd/die.wav") \
+	S(SND_GAME_OVER, "snd/gameover.wav") \
+	S(SND_REPAIR, "snd/repair.wav") \
+	S(SND_COMBO, "snd/combo.wav") \
+	S(SND_PROGRESS, "snd/progress.wav") \
+	S(SND_DETECTION, "snd/detection.wav") \
+	S(SND_EXPLOSION, "snd/explosion.wav") \
+	S(SND_FIRE, "snd/fire.wav") \
+	S(SND_MUSIC, "snd/flua.ogg") \
+	S(SND_WIN, "snd/win.wav") \
+	S(SND_HAT, "snd/hat.ogg") \
+	S(SND_SNARE, "snd/snare.ogg") \
+	S(SND_BASS, "snd/bass.ogg")
+
 enum SoundID {
-	SND_MENU,
-	SND_START,
-	SND_DIE,
-	SND_GAME_OVER,
-	SND_REPAIR,
-	SND_COMBO,
-	SND_PROGRESS,
-	SND_PROGRESS1,
-	SND_DETECTION,
-	SND_EXPLOSION,
-	SND_FIRE,
-	SND_MENU1,
-	SND_MUSIC,
-	SND_WIN,
-	SND_HAT,
-	SND_SNARE,
-	SND_BASS,
-	SND_C,
-	SND_D,
-	SND_E,
-	SND_F,
-	SND_G,
-	SND_A,
-	SND_B,
-	SND_C2,
+#define S(a, b) a,
+	RAYSNDS
+#undef S
 
 	SND_COUNT
 };

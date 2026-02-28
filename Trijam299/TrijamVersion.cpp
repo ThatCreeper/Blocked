@@ -24,7 +24,8 @@ import stateinator;
 	S(potion_room) \
 	S(soap) \
 	S(chocolate) \
-	S(potion)
+	S(potion) \
+	S(spotroom)
 #define S(a) T(a, #a ".png")
 struct Textures {
 #define T(a, b) Texture2D a;
@@ -149,6 +150,29 @@ Color potionColors[] = {
 	{122, 107, 135, 255},
 	{136, 116, 148, 255}
 };
+const char *potionNames[] = {
+	"Soap potion",
+	"Glass potion",
+	"Mushroom Juice",
+	"Hot Chocolate",
+	"Washed Glass potion",
+	"Clean Mushrooms Potion",
+	"Gross Chocolate Potion",
+	"Chopped Mushrooms Potion",
+	"Crushed Chocolate Potion",
+	"Chocolate covered mushrooms potion"
+};
+
+struct texter : entity {
+	const char *text_;
+
+	texter(const char *text) : entity(), text_(text) {}
+
+	void render() override {
+		ClearBackground(BLACK);
+		DrawText(text_, 10, 10, 30, WHITE);
+	}
+};
 
 struct positional : entity {
 	int x = 0;
@@ -229,7 +253,7 @@ struct ingredient : positional {
 	}
 
 	void render() override {
-		Color c = isUsed() ? GRAY : isOver() ? YELLOW : WHITE;
+		Color c = isOver() ? YELLOW : WHITE;
 		if (idx_ == 0) {
 			DrawTexture(s.t.glass_shards, x, y, c);
 		}
@@ -240,7 +264,7 @@ struct ingredient : positional {
 			DrawTexture(s.t.soap, x, y, c);
 		}
 		else {
-			DrawRectangle(x, y, 150, 150, c);
+			DrawTexture(s.t.chocolate, x, y, c);
 		}
 	}
 };
@@ -273,6 +297,19 @@ struct tex : positional {
 		flip = !flip;
 	}
 };
+
+void applyPotion(int p) {
+	if (p == 0) { s.smell--; }
+	if (p == 1) { s.health--; }
+	if (p == 2) { s.strength++; }
+	if (p == 3) { s.health--; s.strength--; }
+	if (p == 4) { s.smell++; }
+	if (p == 5) { s.strength++; s.health++; }
+	if (p == 6) { s.health--; s.smell--; }
+	if (p == 7) { s.strength++; s.smell++; }
+	if (p == 8) { s.health--; s.smell++; }
+	if (p == 9) { s.health--; s.strength; }
+}
 
 struct spotAnimator : entity {
 	tex *h_;
@@ -328,7 +365,53 @@ struct craftVis : entity {
 		if (s.sels >= 2) {
 			DrawTextureEx(getTex(s.selB), { 354, 18 }, 0, 0.5, WHITE);
 			DrawTextureEx(s.t.potion, { 518, 18 }, 0, 0.5, potionColors[s.potion[s.potions - 1]]);
+			DrawText(potionNames[s.potion[s.potions - 1]], 180, 107, 20, BLACK);
+			DrawText(potionNames[s.potion[s.potions - 1]], 180, 105, 20, WHITE);
 		}
+	}
+};
+
+struct spotRoom : entity {
+	bool used[3] = { false, false, false };
+
+	void init() override {
+		w->add(new tex(s.t.potion));
+	}
+	
+	void update() override {
+		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+			if (isOver(0)) { used[0] = true; applyPotion(s.potion[0]); }
+			if (isOver(1)) { used[1] = true; applyPotion(s.potion[1]); }
+			if (isOver(2)) { used[2] = true; applyPotion(s.potion[2]); }
+		}
+
+		if (IsKeyPressed(KEY_ENTER)) {
+			w->remove(this);
+			w->add(new spotAnimator);
+		}
+	}
+
+	bool isOver(int n) {
+		if (GetMouseY() >= 150) return false;
+		if (GetMouseX() >= 320 + 150) return false;
+		if (GetMouseX() >= 159 + 150) return n == 2;
+		if (GetMouseX() >= 150) return n == 1;
+		return n == 0;
+	}
+
+	void render() override {
+		DrawTexture(s.t.spotroom, 0, 0, WHITE);
+		if (!used[0] && isOver(0)) DrawRectangle(0, 0, 150, 150, YELLOW);
+		if (!used[0]) DrawTexture(s.t.potion, 0, 0, potionColors[s.potion[0]]);
+		if (!used[1] && isOver(1)) DrawRectangle(159, 0, 150, 150, YELLOW);
+		if (!used[1]) DrawTexture(s.t.potion, 159, 0, potionColors[s.potion[1]]);
+		if (!used[2] && isOver(2)) DrawRectangle(320, 0, 150, 150, YELLOW);
+		if (!used[2]) DrawTexture(s.t.potion, 320, 0, potionColors[s.potion[2]]);
+		const char *txt = TextFormat("%s\n%s\n%s", potionNames[s.potion[0]], potionNames[s.potion[1]], potionNames[s.potion[2]]);
+		DrawText(txt, 0, 169, 20, BLACK);
+		DrawText(txt, 0, 167, 20, WHITE);
+
+		DrawKeybindBar("[Enter] Continue", "");
 	}
 };
 
@@ -349,8 +432,6 @@ bool TrijamRunGame() {
 	s.w.add(new ingredient(2));
 	s.w.add(new ingredient(3));
 	s.w.add(new craftVis);
-
-	s.w.add(new tex(s.t.mushrooms));
 
 	while (!WindowShouldClose()) {
 		PlaySound(SND_WOOFARF);
@@ -407,7 +488,7 @@ bool isCombo(int a, int b) {
 
 inline void ingredient::update() {
 	positional::update();
-	if (isUsed()) return;
+	//if (isUsed()) return;
 	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && isOver()) {
 		if (s.sels == 0) {
 			s.sels++;
@@ -418,16 +499,16 @@ inline void ingredient::update() {
 			s.selB = idx_;
 
 			int p = 0;
-			if (isCombo(2, 2)) p = 0;
-			if (isCombo(0, 0)) p = 1;
-			if (isCombo(1, 1)) p = 2;
-			if (isCombo(3, 3)) p = 3;
-			if (isCombo(0, 2)) p = 4;
-			if (isCombo(1, 2)) p = 5;
-			if (isCombo(2, 3)) p = 6;
-			if (isCombo(0, 1)) p = 7;
-			if (isCombo(0, 3)) p = 8;
-			if (isCombo(1, 3)) p = 9;
+			if (isCombo(2, 2)) { p = 0; }
+			if (isCombo(0, 0)) { p = 1; }
+			if (isCombo(1, 1)) { p = 2; }
+			if (isCombo(3, 3)) { p = 3; }
+			if (isCombo(0, 2)) { p = 4; }
+			if (isCombo(1, 2)) { p = 5; }
+			if (isCombo(2, 3)) { p = 6; }
+			if (isCombo(0, 1)) { p = 7; }
+			if (isCombo(0, 3)) { p = 8; }
+			if (isCombo(1, 3)) { p = 9; }
 			s.potion[s.potions] = p;
 			s.potions++;
 
@@ -436,7 +517,7 @@ inline void ingredient::update() {
 					{
 						s.sels = 0;
 						if (s.potions == 3) {
-							s.w.add(new spotAnimator);
+							s.w.add(new spotRoom);
 						}
 					});
 		}

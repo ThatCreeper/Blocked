@@ -20,7 +20,8 @@ import stateinator;
 	S(spot_wings) \
 	S(inside) \
 	S(glass_shards) \
-	S(mushrooms)
+	S(mushrooms) \
+	S(potion_room)
 #define S(a) T(a, #a ".png")
 struct Textures {
 #define T(a, b) Texture2D a;
@@ -131,12 +132,9 @@ struct State {
 struct positional : entity {
 	int x = 0;
 	int y = 0;
+	float scale = 1.0;
 
-	E_SLS
-		E_SL(SIGNAL_GUI);
-	E_SLE;
-
-	E_SIGNAL(SIGNAL_GUI) {
+	void gui() override {
 		if (guiHeader("positional")) {
 			if (ImGui::Button("kill")) w->remove(this);
 			ImGui::DragInt("x", &x);
@@ -145,16 +143,22 @@ struct positional : entity {
 			ImGui::TreePop();
 		}
 	}
+
+	entity *positioned(int x_, int y_) {
+		x = x_;
+		y = y_;
+		return this;
+	}
 };
 
-struct rectRend : entityRenderer {
+struct rectRend : positional {
 	Color color_;
 	int wid_;
 	int hei_;
 	int offX_;
 	int offY_;
 
-	rectRend(entity *_e, Color color, int wid, int hei, int offX, int offY) : entityRenderer(_e) {
+	rectRend(Color color, int wid, int hei, int offX, int offY) : positional() {
 		color_ = color;
 		wid_ = wid;
 		hei_ = hei;
@@ -162,32 +166,9 @@ struct rectRend : entityRenderer {
 		offY_ = offY;
 	}
 
-	void render(entity *_e) override {
-		ER_E(positional);
-		DrawRectangle(e->x + offX_, e->y + offY_, wid_, hei_, color_);
+	void render() override {
+		DrawRectangle(x + offX_, y + offY_, wid_, hei_, color_);
 	}
-};
-
-struct testent : positional {
-	E_REND(new rectRend(this, BLUE, 32, 32, 0, 0));
-
-	E_SLS
-		E_SL(SIGNAL_GUI);
-	E_SLE;
-
-	E_SIGNAL(SIGNAL_GUI) {
-		if (guiHeader("testent")) {
-			E_SIGPAR(positional, SIGNAL_GUI);
-
-			ImGui::TreePop();
-		}
-	}
-};
-
-struct ingredientRenderer : entityRenderer {
-	ingredientRenderer(entity *_e) : entityRenderer(_e) {}
-
-	void render(entity *_e) override;
 };
 
 struct ingredient : positional {
@@ -197,15 +178,9 @@ struct ingredient : positional {
 		idx_ = idx;
 	}
 
-	E_REND(new ingredientRenderer(this));
-
-	E_SLS
-		E_SL(SIGNAL_GUI);
-	E_SLE;
-
-	E_SIGNAL(SIGNAL_GUI) {
+	void gui() override {
 		if (guiHeader("ingredient")) {
-			E_SIGPAR(positional, SIGNAL_GUI);
+			positional::gui();
 			ImGui::TreePop();
 		}
 	}
@@ -252,33 +227,25 @@ struct ingredient : positional {
 			(s.sels >= 2 && s.selB == idx_) ||
 			(s.sels >= 3 && s.selC == idx_);
 	}
-};
 
-struct houseRenderer : entityRenderer {
-	Texture2D *_a;
-	Texture2D *_b;
-	bool flip = false;
-
-	houseRenderer(entity *_e, Texture2D *a, Texture2D *b) : entityRenderer(_e) {
-		_a = a;
-		_b = b;
-	}
-
-	void render(entity *_e) override {
-		ER_E(positional);
-		if (flip) DrawTexture(*_a, e->x, e->y, WHITE);
-		else DrawTexture(*_b, e->x, e->y, WHITE);
-		flip = !flip;
+	void render() override {
+		Color c = isUsed() ? GRAY : isOver() ? YELLOW : WHITE;
+		if (idx_ == 0) {
+			DrawTexture(s.t.glass_shards, x, y, c);
+		}
+		else if (idx_ == 1) {
+			DrawTexture(s.t.mushrooms, x, y, c);
+		}
+		else {
+			DrawRectangle(x, y, 150, 150, c);
+		}
 	}
 };
-
-houseRenderer *texRenderer(entity *_e, Texture2D *t) {
-	return new houseRenderer(_e, t, t);
-}
 
 struct tex : positional {
 	Texture2D *a_;
 	Texture2D *b_;
+	bool flip = false;
 
 	tex(Texture2D &a, Texture2D &b) {
 		a_ = &a;
@@ -289,16 +256,28 @@ struct tex : positional {
 		b_ = &a;
 	}
 
-	E_REND(new houseRenderer(this, a_, b_));
+	void gui() override {
+		if (guiHeader("tex")) {
+			positional::gui();
+			ImGui::DragFloat("scale", &scale);
+			ImGui::TreePop();
+		}
+	}
 
-	E_SLJUSTGUI;
-	E_SIGNALGUIPARENT("tex", positional);
+	void render() override {
+		if (flip) DrawTextureEx(*a_, { (float)x, (float)y }, 0, scale, WHITE);
+		else DrawTextureEx(*b_, { (float)x, (float)y }, 0, scale, WHITE);
+		flip = !flip;
+	}
 };
 
 struct spotAnimator : entity {
 	tex *h_;
 	tex *f_;
 	tex *i_;
+	tex *f1_;
+	tex *f2_;
+	tex *f3_;
 
 	void init() override {
 		w->add(h_ = new tex(s.t.house));
@@ -306,15 +285,15 @@ struct spotAnimator : entity {
 		f_->x = 68;
 		f_->y = 3;
 		w->add(i_ = new tex(s.t.inside));
-		w->add(f_ = new tex(s.t.fire1, s.t.fire2));
-		f_->x = -118;
-		f_->y = 9;
-		w->add(f_ = new tex(s.t.fire1, s.t.fire2));
-		f_->x = -223;
-		f_->y = 172;
-		w->add(f_ = new tex(s.t.fire1, s.t.fire2));
-		f_->x = 280;
-		f_->y = 158;
+		w->add(f1_ = new tex(s.t.fire1, s.t.fire2));
+		f1_->x = -118;
+		f1_->y = 9;
+		w->add(f2_ = new tex(s.t.fire1, s.t.fire2));
+		f2_->x = -223;
+		f2_->y = 172;
+		w->add(f3_ = new tex(s.t.fire1, s.t.fire2));
+		f3_->x = 280;
+		f3_->y = 158;
 	}
 
 	void onRemove() override {
@@ -334,11 +313,13 @@ bool TrijamRunGame() {
 
 	RenderTexture2D render = LoadRenderTexture(SCRWID, SCRHEI);
 
-	s.w.add(new spotAnimator);
+	s.w.add(new tex(s.t.potion_room));
 	s.w.add(new ingredient(0));
 	s.w.add(new ingredient(1));
 	s.w.add(new ingredient(2));
 	s.w.add(new ingredient(3));
+
+	s.w.add(new tex(s.t.mushrooms));
 
 	while (!WindowShouldClose()) {
 		PlaySound(SND_WOOFARF);
@@ -371,7 +352,7 @@ bool TrijamRunGame() {
 		s.t.Gui();
 		s.s.Gui();
 		ImGui::Begin("Entities");
-		s.w.broadcast(SIGNAL_GUI, nullptr);
+		s.w.forEach<entity>([](entity *e) { e->gui(); });
 		ImGui::End();
 		s.gui();
 
@@ -387,19 +368,4 @@ END:
 	s.s.Unload();
 
 	return restart;
-}
-
-inline void ingredientRenderer::render(entity *_e) {
-	ER_E(ingredient);
-
-	Color c = e->isUsed() ? GRAY : e->isOver() ? YELLOW : WHITE;
-	if (e->idx_ == 0) {
-		DrawTexture(s.t.glass_shards, e->x, e->y, c);
-	}
-	else if (e->idx_ == 1) {
-		DrawTexture(s.t.mushrooms, e->x, e->y, c);
-	}
-	else {
-		DrawRectangle(e->x, e->y, 150, 150, c);
-	}
 }

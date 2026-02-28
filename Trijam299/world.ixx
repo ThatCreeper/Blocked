@@ -42,9 +42,11 @@ export struct world {
 		}
 	}
 
-	void broadcast(signal s, void *p) {
+	template <class Type, class Fn>
+	void forEach(Fn fn) {
 		for (auto &e : entities) {
-			e->accept(s, p);
+			Type *casted = dynamic_cast<Type *>(&*e);
+			if (casted) fn(casted);
 		}
 	}
 	

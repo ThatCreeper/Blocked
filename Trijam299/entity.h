@@ -45,7 +45,7 @@ struct entity {
 	virtual void onRemove() {}
 
 	inline bool guiHeader(const char *name) {
-		const char *processed = TextFormat("%s %d", name, ((int)this) & 0x1FF);
+		const char *processed = TextFormat("%s %d##%d", name, ((int)this) & 0x1FF, ((int)this));
 		return ImGui::TreeNode(processed);
 	}
 };
@@ -59,3 +59,5 @@ struct entity {
 #define E_SIGP(type) type *param = (type *)ptr
 #define E_SIGPAR(super, s) super::sig##s(ptr)
 #define E_REND(rendererClass) virtual void spawnRenderer() override { rend = std::unique_ptr<entityRenderer>(rendererClass); }
+#define E_SLJUSTGUI E_SLS E_SL(SIGNAL_GUI) E_SLE
+#define E_SIGNALGUIPARENT(name, parent) E_SIGNAL(SIGNAL_GUI) { if (guiHeader(name)) { E_SIGPAR(parent, SIGNAL_GUI); ImGui::TreePop(); } }

@@ -14,6 +14,7 @@ export struct world {
 		e->w = this;
 		entities.emplace_back(e);
 		e->spawnRenderer();
+		e->init();
 	}
 
 	void remove(entity *e) {

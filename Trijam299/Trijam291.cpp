@@ -3,9 +3,11 @@
 
 // WHATEVER YOU DO, DO NOT ADD CLASSES PLEASE FOR THE LOVE OF GOD. OR, IF YOU DO, THINK ABOUT IT. THINK "DO I NEED THIS". THINK THAT AND THEN SAY /NO/!
 
-//#ifdef _DEBUG
-// #define FORCE_EDITION 0
-//#endif
+// nerddddd - caden 2/28/2026
+
+#ifdef _DEBUG
+ #define FORCE_EDITION 0
+#endif
 
 static bool updated = false;
 
@@ -51,7 +53,7 @@ bool PickFlags() {
 		ClearBackground(BLACK);
 
 		// TODO: Replace this.
-		DrawText("Edition of Shot:", 15, 15, 20, WHITE);
+		DrawText("Edition of Weaken Spot:", 15, 15, 20, WHITE);
 
 		DrawLine(15, 45, 395, 45, overflow);
 		DrawLine(15, 85, 395, 85, overflow);
@@ -82,7 +84,7 @@ int main() {
 	}*/
 
 	SetConfigFlags(FLAG_VSYNC_HINT);
-	InitWindow(SCRWID, SCRHEI, "Shot");
+	InitWindow(SCRWID, SCRHEI, "Weaken Spot");
 	rlImGuiSetup(true);
 	InitAudioDevice();
 
@@ -90,7 +92,7 @@ int main() {
 	
 	SetExitKey(0);
 
-	//SetTargetFPS(30);
+	SetTargetFPS(30);
 
 	if (!PickFlags())
 		goto END;

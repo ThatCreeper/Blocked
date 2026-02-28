@@ -19,6 +19,7 @@ Sound GetSound(SoundID id) {
 }
 
 void PlaySound(SoundID id) {
+	if (id == SND_WOOFARF && IsSoundPlaying(GetSound(id))) return;
 	PlaySound(GetSound(id));
 }
 

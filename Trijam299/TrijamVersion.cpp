@@ -21,7 +21,10 @@ import stateinator;
 	S(inside) \
 	S(glass_shards) \
 	S(mushrooms) \
-	S(potion_room)
+	S(potion_room) \
+	S(soap) \
+	S(chocolate) \
+	S(potion)
 #define S(a) T(a, #a ".png")
 struct Textures {
 #define T(a, b) Texture2D a;
@@ -113,8 +116,10 @@ struct State {
 
 	int selA = -1;
 	int selB = -1;
-	int selC = -1;
 	int sels = 0;
+
+	int potion[3] = { -1, -1, -1 };
+	int potions = 0;
 
 	void gui() {
 		ImGui::Begin("State");
@@ -123,11 +128,27 @@ struct State {
 		ImGui::InputFloat("strength", &strength);
 		ImGui::InputInt("selA", &selA);
 		ImGui::InputInt("selB", &selB);
-		ImGui::InputInt("selC", &selC);
 		ImGui::InputInt("sels", &sels);
+		ImGui::InputInt("potionA", &potion[0]);
+		ImGui::InputInt("potionB", &potion[1]);
+		ImGui::InputInt("potionC", &potion[2]);
+		ImGui::InputInt("potions", &potions);
 		ImGui::End();
 	}
 } s;
+
+Color potionColors[] = {
+	{72, 143, 70, 255},
+	{199, 242, 233, 255},
+	{137, 143, 70, 255},
+	{64, 39, 15, 255},
+	{119, 191, 188, 255},
+	{214, 187, 148, 255},
+	{104, 107, 25, 255},
+	{122, 107, 135, 255},
+	{122, 107, 135, 255},
+	{136, 116, 148, 255}
+};
 
 struct positional : entity {
 	int x = 0;
@@ -200,32 +221,11 @@ struct ingredient : positional {
 		return GetMouseX() >= x && GetMouseY() >= y && GetMouseX() < x + 150 && GetMouseY() < y + 150;
 	}
 
-	void update() override {
-		positional::update();
-		if (isUsed()) return;
-		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && isOver()) {
-			if (s.sels == 0) {
-				s.sels++;
-				s.selA = idx_;
-			}
-			else if (s.sels == 1) {
-				s.sels++;
-				s.selB = idx_;
-			}
-			else if (s.sels == 2) {
-				s.sels++;
-				s.selC = idx_;
-			}
-			else {
-				s.sels = 0;
-			}
-		}
-	}
+	void update() override;
 
 	bool isUsed() {
 		return (s.sels >= 1 && s.selA == idx_) ||
-			(s.sels >= 2 && s.selB == idx_) ||
-			(s.sels >= 3 && s.selC == idx_);
+			(s.sels >= 2 && s.selB == idx_);
 	}
 
 	void render() override {
@@ -235,6 +235,9 @@ struct ingredient : positional {
 		}
 		else if (idx_ == 1) {
 			DrawTexture(s.t.mushrooms, x, y, c);
+		}
+		else if (idx_ == 2) {
+			DrawTexture(s.t.soap, x, y, c);
 		}
 		else {
 			DrawRectangle(x, y, 150, 150, c);
@@ -302,6 +305,33 @@ struct spotAnimator : entity {
 	}
 };
 
+struct craftVis : entity {
+	Texture2D getTex(int idx) {
+		if (idx == 0) {
+			return s.t.glass_shards;
+		}
+		else if (idx == 1) {
+			return s.t.mushrooms;
+		}
+		else if (idx == 2) {
+			return s.t.soap;
+		}
+		else {
+			return s.t.chocolate;
+		}
+	}
+
+	void render() override {
+		if (s.sels >= 1) {
+			DrawTextureEx(getTex(s.selA), { 188, 18 }, 0, 0.5, WHITE);
+		}
+		if (s.sels >= 2) {
+			DrawTextureEx(getTex(s.selB), { 354, 18 }, 0, 0.5, WHITE);
+			DrawTextureEx(s.t.potion, { 518, 18 }, 0, 0.5, potionColors[s.potion[s.potions - 1]]);
+		}
+	}
+};
+
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
@@ -318,6 +348,7 @@ bool TrijamRunGame() {
 	s.w.add(new ingredient(1));
 	s.w.add(new ingredient(2));
 	s.w.add(new ingredient(3));
+	s.w.add(new craftVis);
 
 	s.w.add(new tex(s.t.mushrooms));
 
@@ -368,4 +399,46 @@ END:
 	s.s.Unload();
 
 	return restart;
+}
+
+bool isCombo(int a, int b) {
+	return (s.selA == a && s.selB == b) || (s.selA == b && s.selB == a);
+}
+
+inline void ingredient::update() {
+	positional::update();
+	if (isUsed()) return;
+	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && isOver()) {
+		if (s.sels == 0) {
+			s.sels++;
+			s.selA = idx_;
+		}
+		else if (s.sels == 1) {
+			s.sels++;
+			s.selB = idx_;
+
+			int p = 0;
+			if (isCombo(2, 2)) p = 0;
+			if (isCombo(0, 0)) p = 1;
+			if (isCombo(1, 1)) p = 2;
+			if (isCombo(3, 3)) p = 3;
+			if (isCombo(0, 2)) p = 4;
+			if (isCombo(1, 2)) p = 5;
+			if (isCombo(2, 3)) p = 6;
+			if (isCombo(0, 1)) p = 7;
+			if (isCombo(0, 3)) p = 8;
+			if (isCombo(1, 3)) p = 9;
+			s.potion[s.potions] = p;
+			s.potions++;
+
+			flux::to(1)
+				->oncomplete([this]
+					{
+						s.sels = 0;
+						if (s.potions == 3) {
+							s.w.add(new spotAnimator);
+						}
+					});
+		}
+	}
 }

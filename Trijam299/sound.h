@@ -16,7 +16,9 @@
 	S(SND_HAT, "snd/hat.ogg") \
 	S(SND_SNARE, "snd/snare.ogg") \
 	S(SND_BASS, "snd/bass.ogg") \
-	S(SND_WOOFARF, "snd/woofarf.ogg")
+	S(SND_WOOFARF, "snd/woofarf.ogg") \
+	S(SND_WAHWAHHITLER, "snd/wahwahhitler.wav") \
+	S(SND_SNIFF, "snd/sniff.wav")
 
 enum SoundID {
 #define S(a, b) a,

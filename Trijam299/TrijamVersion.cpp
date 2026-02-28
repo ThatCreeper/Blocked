@@ -25,7 +25,9 @@ import stateinator;
 	S(soap) \
 	S(chocolate) \
 	S(potion) \
-	S(spotroom)
+	S(spotroom) \
+	S(hitler) \
+	S(baby)
 #define S(a) T(a, #a ".png")
 struct Textures {
 #define T(a, b) Texture2D a;
@@ -175,15 +177,15 @@ struct texter : entity {
 };
 
 struct positional : entity {
-	int x = 0;
-	int y = 0;
+	float x = 0;
+	float y = 0;
 	float scale = 1.0;
 
 	void gui() override {
 		if (guiHeader("positional")) {
 			if (ImGui::Button("kill")) w->remove(this);
-			ImGui::DragInt("x", &x);
-			ImGui::DragInt("y", &y);
+			ImGui::DragFloat("x", &x);
+			ImGui::DragFloat("y", &y);
 
 			ImGui::TreePop();
 		}
@@ -273,6 +275,7 @@ struct tex : positional {
 	Texture2D *a_;
 	Texture2D *b_;
 	bool flip = false;
+	float rotation = 0.0;
 
 	tex(Texture2D &a, Texture2D &b) {
 		a_ = &a;
@@ -287,13 +290,14 @@ struct tex : positional {
 		if (guiHeader("tex")) {
 			positional::gui();
 			ImGui::DragFloat("scale", &scale);
+			ImGui::DragFloat("rotation", &rotation);
 			ImGui::TreePop();
 		}
 	}
 
 	void render() override {
-		if (flip) DrawTextureEx(*a_, { (float)x, (float)y }, 0, scale, WHITE);
-		else DrawTextureEx(*b_, { (float)x, (float)y }, 0, scale, WHITE);
+		if (flip) DrawTextureEx(*a_, { (float)x, (float)y }, rotation, scale, WHITE);
+		else DrawTextureEx(*b_, { (float)x, (float)y }, rotation, scale, WHITE);
 		flip = !flip;
 	}
 };
@@ -318,22 +322,111 @@ struct spotAnimator : entity {
 	tex *f1_;
 	tex *f2_;
 	tex *f3_;
+	tex *s_;
+	tex *hit_;
+
+	void update() override {
+		StopSound(SND_WOOFARF);
+	}
 
 	void init() override {
 		w->add(h_ = new tex(s.t.house));
 		w->add(f_ = new tex(s.t.fire1, s.t.fire2));
 		f_->x = 68;
 		f_->y = 3;
-		w->add(i_ = new tex(s.t.inside));
-		w->add(f1_ = new tex(s.t.fire1, s.t.fire2));
-		f1_->x = -118;
-		f1_->y = 9;
-		w->add(f2_ = new tex(s.t.fire1, s.t.fire2));
-		f2_->x = -223;
-		f2_->y = 172;
-		w->add(f3_ = new tex(s.t.fire1, s.t.fire2));
-		f3_->x = 280;
-		f3_->y = 158;
+		w->add(s_ = new tex(s.t.spot));
+		s_->x = 851;
+		s_->y = 321;
+
+		flux::to(2)
+			->with(&s_->x, 416)
+			->oncomplete([this]
+				{
+					if (s.strength <= -2) {
+						w->add(new texter("You win!\nSpot was too weak to enter\nthe house :)\nhe was a weak spot\n\nreload to play again"));
+						PlaySound(SND_WIN);
+					}
+					else if (s.health <= -2) {
+						flux::to(4)
+							->with(&s_->y, -178)
+							->oncomplete([this]
+								{
+									w->add(new texter("spot died (too weak)\n\nhow could you :(\n\nreload to play again"));
+									PlaySound(SND_GAME_OVER);
+								});
+					}
+					else {
+						PlaySound(SND_EXPLOSION);
+						w->add(h_ = new tex(s.t.inside));
+						w->add(s_ = new tex(s.t.spot));
+						s_->x = 836;
+						s_->y = 254;
+						flux::to(2)
+							->with(&s_->x, 250)
+							->oncomplete([]()
+								{
+									PlaySound(SND_SNIFF);
+								})
+							->after(2)
+							->with(&s_->rotation, 360)
+							->after(2)
+							->oncomplete([this]
+								{
+									if (s.smell < -2)
+									{
+										if (s.strength >= 0) {
+											flux::to(4)
+												->with(&s_->x, -468.000)
+												->oncomplete([this]
+													{
+														w->add(new texter("spot could not find the baby (too weak)\n\nyou win\n\ncongrats you made a weak spot\n\nreload to play again"));
+														PlaySound(SND_WIN);
+													});
+										}
+										else {
+											flux::to(2)
+												->oncomplete([this]
+													{
+														w->add(new texter("Your dog spot could not find the child\nnor could your dog escape the house\n\nyour beautiful dog has died\n\nreload to play again"));
+														PlaySound(SND_GAME_OVER);
+													});
+										}
+									}
+									else {
+										flux::to(2)
+											->with(&s_->x, 54)
+											->after(1)
+											->with(&s_->scale, 0)
+											->oncomplete([this]
+												{
+													PlaySound(SND_WAHWAHHITLER);
+													w->add(h_ = new tex(s.t.hitler));
+												})
+											->after(4)
+											->oncomplete([this]
+												{
+													if (s.strength < -1) {
+														w->add(new texter("Spot & baby hitler both perished\nin the flames.\n\nYou weakened spot too much.\n\nreload to play again"));
+														PlaySound(SND_GAME_OVER);
+													}
+													else {
+														w->add(h_ = new tex(s.t.house));
+														w->add(f_ = new tex(s.t.fire1, s.t.fire2));
+														f_->x = 68;
+														f_->y = 3;
+														w->add(s_ = new tex(s.t.spot));
+														s_->x = 600;
+														s_->y = 321;
+														w->add(hit_ = new tex(s.t.baby));
+
+														w->add(new texter("Baby hitler was saved.\n\nYOU LOST!!!!!\n\nreload to play again"));
+														PlaySound(SND_GAME_OVER);
+													}
+												});
+									}
+								});
+					}
+				});
 	}
 
 	void onRemove() override {
@@ -375,7 +468,7 @@ struct spotRoom : entity {
 	bool used[3] = { false, false, false };
 
 	void init() override {
-		w->add(new tex(s.t.potion));
+		//w->add(new tex(s.t.potion));
 	}
 	
 	void update() override {
@@ -461,12 +554,12 @@ bool TrijamRunGame() {
 
 		EndShaderMode();
 
-		s.t.Gui();
+		/*s.t.Gui();
 		s.s.Gui();
 		ImGui::Begin("Entities");
 		s.w.forEach<entity>([](entity *e) { e->gui(); });
 		ImGui::End();
-		s.gui();
+		s.gui();*/
 
 		DoFadeInAnimation(fadein);
 

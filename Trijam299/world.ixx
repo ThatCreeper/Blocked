@@ -46,4 +46,13 @@ export struct world {
 			e->accept(s, p);
 		}
 	}
+	
+	template <class E>
+	E *getFirstOfKind() {
+		for (auto &e : entities) {
+			E *casted = dynamic_cast<E *>(&*e);
+			if (casted) return casted;
+		}
+		return nullptr;
+	}
 };

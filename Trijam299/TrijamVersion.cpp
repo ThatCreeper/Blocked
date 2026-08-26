@@ -6,9 +6,7 @@
 
 #include "global.h"
 #include "entity.h"
-
-import world;
-import stateinator;
+#include "world.h"
 
 #define TEXTURES \
 	T(frozen, "frozen.png") \
@@ -312,7 +310,7 @@ void applyPotion(int p) {
 	if (p == 6) { s.health--; s.smell--; }
 	if (p == 7) { s.strength++; s.smell++; }
 	if (p == 8) { s.health--; s.smell++; }
-	if (p == 9) { s.health--; s.strength; }
+	if (p == 9) { s.health--; s.strength++; }
 }
 
 struct spotAnimator : entity {
@@ -547,12 +545,12 @@ bool TrijamRunGame() {
 		
 		ClearBackground(BLACK);
 
-		BeginShaderMode(s.s.blur);
-		SetShaderValueTexture(s.s.blur, s.s.uniform_blur_lut, s.t.baselut);
+		//BeginShaderMode(s.s.blur);
+		//SetShaderValueTexture(s.s.blur, s.s.uniform_blur_lut, s.t.baselut);
 
 		DrawTexturePro(render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE);
 
-		EndShaderMode();
+		//EndShaderMode();
 
 		/*s.t.Gui();
 		s.s.Gui();

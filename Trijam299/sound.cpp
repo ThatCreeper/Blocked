@@ -1,9 +1,11 @@
 #include "global.h"
+#include "sound.h"
 #ifdef _USE_FMOD_
 #include <fmod_studio.hpp>
 #include <unordered_map>
 #include <string>
 #endif
+#include <array>
 
 #ifndef _USE_FMOD_
 std::array<Sound, SND_COUNT> loadedSounds;

@@ -1,12 +1,8 @@
-module;
-
 #include "entity.h"
+#include <list>
+#include <memory>
 
-export module world;
-
-import std;
-
-export struct world {
+struct world {
 	std::list<std::unique_ptr<entity>> entities;
 
 	// Entity should be added with `new` and should not be deleted

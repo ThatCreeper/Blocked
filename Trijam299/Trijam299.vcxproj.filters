@@ -39,9 +39,6 @@
     <ClCompile Include="TrijamVersion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="world.ixx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="imgui_internal.h">
       <Filter>Header Files\ImGui</Filter>
     </ClCompile>
@@ -139,6 +136,9 @@
     </ClInclude>
     <ClInclude Include="version_norm.h">
       <Filter>Header Files\Savestate</Filter>
+    </ClInclude>
+    <ClInclude Include="world.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

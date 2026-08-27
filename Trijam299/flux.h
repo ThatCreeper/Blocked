@@ -26,8 +26,10 @@ namespace flux {
 
 	/* Updates all tweens that live on the global Group.
 	 * See also: Group::update()
+	 * 
+	 * NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.
 	 */
-	void update(float deltaTime);
+	// void update(float deltaTime);
 
 	/* Any number of numerical values can be tweened simultaneously.
 	 * Tweens are started by using the flux::to function.
@@ -38,15 +40,19 @@ namespace flux {
 	 * in C++. So new functions are used instead. See Tween::with.
 	 * 
 	 * This simply uses the global Group. See also: Group::to()
+	 * 
+	 * NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.
 	 */
-	TweenPtr to(float duration);
+	// TweenPtr to(float duration);
 
 	/* Returns the total remaining time of all tweens that live
 	 * on the global Group.
 	 * 
 	 * See also: Group::totalremainingtime()
+	 * 
+	 * NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.
 	 */
-	float totalremainingtime();
+	// float totalremainingtime();
 
 	class Tween : public std::enable_shared_from_this<Tween> {
 	public:

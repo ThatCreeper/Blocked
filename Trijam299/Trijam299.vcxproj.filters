@@ -72,9 +72,6 @@
     <ClCompile Include="sound.cpp">
       <Filter>Source Files\Stabilized</Filter>
     </ClCompile>
-    <ClCompile Include="stateinator.ixx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="globstate.cpp">
       <Filter>Source Files\Savestate</Filter>
     </ClCompile>
@@ -138,6 +135,9 @@
       <Filter>Header Files\Savestate</Filter>
     </ClInclude>
     <ClInclude Include="world.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource_mess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

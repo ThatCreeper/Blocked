@@ -2,7 +2,7 @@
 #include <list>
 #include <memory>
 
-struct world {
+struct World {
 	std::list<std::unique_ptr<entity>> entities;
 
 	// Entity should be added with `new` and should not be deleted

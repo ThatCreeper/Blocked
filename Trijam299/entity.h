@@ -5,11 +5,9 @@
 #include "imgui.h"
 
 struct entity;
-struct world;
 
 struct entity {
 	flux::Group tw;
-	world *w = nullptr; // set by world.add
 	bool removed = false;
 
 	virtual ~entity() {
@@ -35,3 +33,5 @@ struct entity {
 		return ImGui::TreeNode(processed);
 	}
 };
+
+#define ENT_GUI_HEAD(name) if (!guiHeader(name)) return;

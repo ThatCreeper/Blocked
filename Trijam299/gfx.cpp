@@ -19,7 +19,7 @@ void DoFadeOutAnimation() {
 
 		BeginDrawing();
 
-		DrawRectangle(0, 0, t, SCRHEI, BLUE);
+		DrawRectangle(0, 0, (int)t, SCRHEI, BLUE);
 
 		EndDrawing();
 	}
@@ -32,6 +32,6 @@ void DoFadeInAnimation(int &top) {
 		t *= t;
 		t *= SCRWID;
 
-		DrawRectangle(t, 0, SCRWID, SCRHEI, BLUE);
+		DrawRectangle((int)t, 0, SCRWID, SCRHEI, BLUE);
 	}
 }

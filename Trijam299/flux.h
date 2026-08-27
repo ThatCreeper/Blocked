@@ -157,7 +157,7 @@ namespace flux {
 		std::vector<std::function<void()>> startfns_ = {};
 		std::vector<std::function<void(float)>> updatefns_ = {};
 		std::vector<std::function<void()>> endfns_ = {};
-		Group *group_; // Set to null on update. Should be ignored.
+		Group *group_ = nullptr; // Set to null on update. Should be ignored.
 		std::shared_ptr<Tween> parent_ = nullptr;
 
 		friend class Group;

@@ -6,4 +6,5 @@ struct GlobState {
 
 DECL_SERIALIZER(GlobState)
 
+void LoadGlobState();
 void SaveGlobState();

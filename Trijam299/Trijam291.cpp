@@ -71,17 +71,10 @@ bool PickFlags() {
 	return false;
 }
 
-bool TrijamRunGame();
+namespace TrijamVersion { bool TrijamRunGame(); }
 
 int main() {
-	/*{
-		R r = RRead("save.dat");
-		if (r.file) {
-			SER_REV(r);
-			SERIALIZE(r, globstate);
-		}
-		RClose(r);
-	}*/
+	LoadGlobState();
 
 	SetConfigFlags(FLAG_VSYNC_HINT);
 	InitWindow(SCRWID, SCRHEI, "Weaken Spot");
@@ -97,7 +90,7 @@ int main() {
 	if (!PickFlags())
 		goto END;
 
-	while (TrijamRunGame());
+	while (TrijamVersion::TrijamRunGame());
 
 END:
 	//CloseFMod();

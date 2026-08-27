@@ -7,7 +7,6 @@ struct World {
 
 	// Entity should be added with `new` and should not be deleted
 	void add(entity *e) {
-		e->w = this;
 		entities.emplace_back(e);
 		e->spawnRenderer();
 		e->init();
@@ -41,8 +40,14 @@ struct World {
 	template <class Type, class Fn>
 	void forEach(Fn fn) {
 		for (auto &e : entities) {
-			Type *casted = dynamic_cast<Type *>(&*e);
-			if (casted) fn(casted);
+			if constexpr (std::is_same_v<Type, entity>)
+			{
+				fn(&*e);
+			}
+			else {
+				Type* casted = dynamic_cast<Type*>(&*e);
+				if (casted) fn(casted);
+			}
 		}
 	}
 	

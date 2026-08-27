@@ -14,13 +14,14 @@ NS_BEGIN
 
 #include "resource_mess.h"
 
-namespace State {
-	Textures gTex;
-	Shaders gShd;
-	flux::Group gFlux;
-	World gWorld;
+Textures gTex;
+Shaders gShd;
+flux::Group gFlux;
+World gWorld;
 
-	void stateReset()
+struct State
+{
+	void reset()
 	{
 		gTex = {};
 		gShd = {};
@@ -31,23 +32,22 @@ namespace State {
 		gShd.Load();
 	}
 
-	void stateClose()
+	void close()
 	{
 		gTex.Unload();
 		gShd.Unload();
 	}
 
-	void stateGui() {
+	void gui() {
 		ImGui::Begin("State");
 		ImGui::End();
 	}
-} // namespace State
-using namespace State;
+} s;
 
 bool TrijamRunGame() {
 	int fadein = 0;
 	bool restart = false;
-	stateReset();
+	s.reset();
 
 	PlaySound(SND_START);
 
@@ -85,7 +85,7 @@ bool TrijamRunGame() {
 		ImGui::Begin("Entities");
 		gWorld.forEach<entity>([](entity *e) { e->gui(); });
 		ImGui::End();
-		stateGui();
+		s.gui();
 #endif
 
 		DoFadeInAnimation(fadein);
@@ -96,7 +96,7 @@ bool TrijamRunGame() {
 
 END:
 	SaveGlobState();
-	stateClose();
+	s.close();
 
 	return restart;
 }

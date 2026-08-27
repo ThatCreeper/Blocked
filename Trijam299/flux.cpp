@@ -23,20 +23,23 @@ static float GetEasedValue(flux::Easing easing, float value) {
 	throw; // See comment at top of function.
 }
 
-void flux::update(float deltaTime)
-{
-	globalGroup.update(deltaTime);
-}
+// NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.
+//void flux::update(float deltaTime)
+//{
+//	globalGroup.update(deltaTime);
+//}
 
-flux::TweenPtr flux::to(float duration)
-{
-	return globalGroup.to(duration);
-}
+// NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.
+//flux::TweenPtr flux::to(float duration)
+//{
+//	return globalGroup.to(duration);
+//}
 
-float flux::totalremainingtime()
-{
-	return globalGroup.totalremainingtime();
-}
+// NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.
+//float flux::totalremainingtime()
+//{
+//	return globalGroup.totalremainingtime();
+//}
 
 flux::Group flux::group()
 {

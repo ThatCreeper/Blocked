@@ -29,7 +29,7 @@ struct entity {
 	virtual void onRemove() {}
 
 	inline bool guiHeader(const char *name) {
-		const char *processed = TextFormat("%s %d##%d", name, ((int)this) & 0x1FF, ((int)this));
+		const char *processed = TextFormat("%s %d##%d", name, ((int)(intptr_t)this) & 0x1FF, ((int)(intptr_t)this));
 		return ImGui::TreeNode(processed);
 	}
 };

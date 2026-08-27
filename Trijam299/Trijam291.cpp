@@ -83,9 +83,9 @@ int main() {
 
 	LoadSounds();
 	
-	SetExitKey(0);
+	SetExitKey(KEY_NULL);
 
-	SetTargetFPS(30);
+	// SetTargetFPS(30);
 
 	if (!PickFlags())
 		goto END;

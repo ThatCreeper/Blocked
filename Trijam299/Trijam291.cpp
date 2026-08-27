@@ -76,7 +76,7 @@ namespace TrijamVersion { bool TrijamRunGame(); }
 int main() {
 	LoadGlobState();
 
-	SetConfigFlags(FLAG_VSYNC_HINT);
+	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 	InitWindow(SCRWID, SCRHEI, "Weaken Spot");
 	rlImGuiSetup(true);
 	InitAudioDevice();
@@ -93,7 +93,6 @@ int main() {
 	while (TrijamVersion::TrijamRunGame());
 
 END:
-	//CloseFMod();
 	rlImGuiShutdown();
 	CloseWindow();
 }

@@ -34,4 +34,5 @@ struct entity {
 	}
 };
 
-#define ENT_GUI_HEAD(name) if (!guiHeader(name)) return;
+#define ENT_GUI_BEGIN( name ) if ( !guiHeader( name ) ) return
+#define ENT_GUI_END() ImGui::TreePop()

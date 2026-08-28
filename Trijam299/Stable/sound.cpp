@@ -31,3 +31,18 @@ void PlaySound(SoundID id) {
 void StopSound(SoundID id) {
 	StopSound(GetSound(id));
 }
+
+void SetMusic( SoundID id )
+{
+	for ( int i = 0; i < SND_COUNT; i++ )
+	{
+		if ( i == id ) continue;
+		if ( !loopedSounds[i] ) continue;
+
+		if ( IsSoundPlaying( loadedSounds[i] ) )
+		{
+			StopSound( loadedSounds[i] );
+		}
+	}
+	PlaySound( loadedSounds[id] );
+}

@@ -35,3 +35,4 @@ void LoadSounds();
 Sound GetSound(SoundID id);
 void PlaySound(SoundID id);
 void StopSound(SoundID id);
+void SetMusic( SoundID id );

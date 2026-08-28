@@ -1,20 +1,24 @@
-# Moongram
+# Welcome to ThatCreeper (a.k.a. Creeper Host, Caden)'s Trijam Repository
 
-A hologram, on the moon! What's not to love.
+If you're on the `jam-base` branch, this is the game engine that powers my games.
 
-Easy answer: the maintenance.
+This is the repository that includes the source code for the following games:
+| Game | Branch | Website | Description |
+| ---- | ------ | ------- | ----------- |
+| **Blocked** | `master` | https://creeper-host.itch.io/blocked | A sokobon with a mirror mechanic. |
+| **Recovery** | `trijam300-postjam` | https://creeper-host.itch.io/recovery | A Minesweeper clone. |
+| **Maze Game** | `trijam302` | https://creeper-host.itch.io/maze-game | A Flow Free clone. |
+| **Webberton** | `trijam307-postjam` | https://creeper-host.itch.io/webberton | An awesome dungeon crawler. |
+| **Shot** | `trijam309` | https://creeper-host.itch.io/shot | A strange, nigh painful Taiko clone. |
+| **Line Crosser** | `trijam311` | https://creeper-host.itch.io/line-crosser | A physics sandbox game where you have to do like a chicken and get to the other side. |
+| **Weaken Spot: a game about killing a baby but not a dog** | `trijam361` | https://creeper-host.itch.io/weaken-spot | An answer to the question, *"How bad does a Trijam game become when you get a bunch of people without gamedev experience to help you."* |
 
-Long answer:
+In addition, there are some failed experiments around the cracks:
+| Branch | Description |
+| ------ | ----------- |
+| `dnreimp` | A failed object-oriented approach to the Trijam engine. Vaguely inspired by Deepnight (Sébastien Bénard)'s [GameBase engine](https://github.com/deepnight/gameBase). |
+| `easing` | An expanded version of *Blocked*. |
+| `lisp` | The beginning of an attempt to add Lisp-based scripting to the engine for... some reason. |
+| `trijam314` | An abandoned platformer attempt. |
 
-It's the year **FUTURE** and now, thanks to modern marvels of technology, humanity has seen itself to its most *profitable* idea yet: advertising on the moon. And profitable it is! Whatever is put onto the big display on the moon (usually a cola product) immediately gets a nice boost on the stock market. Does it impact the circadian rhythms of animals? Don't care! It makes the line go up. And that's *good*.
-
-At least, that's the shareholder perspective.
-
-Your perspective is that you have to fix all the screen panels that keep getting *mysteriously broken*. And what that means is that you have to grab a robot, make sure it gets some spare parts, drag it over to the broken panel, and have it swap out the parts. All things considered, if you keep an eye on your battery, it's fairly simple.
-
-And as long as the "shadows" don't find you.
-
-
-Made for Trijam #289 over the course of three hours (plus two breaks and a couple minutes post-jam of fixing a horrible audio issue (no gameplay was changed))
-
-This was programmed in C++ using Raylib and a little set of helper utilities that I carry around.
+The engine is essentially just a pile of helpers over Raylib. This includes the LittleBigPlanet savestate system, some utilities for loading textures and sounds, and a simple and optional Entity/World system.

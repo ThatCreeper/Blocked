@@ -8,9 +8,8 @@
 #include "entity.h"
 #include "world.h"
 
-#define NS_BEGIN namespace TrijamVersion {
-#define NS_END }
-NS_BEGIN
+namespace TrijamVersion
+{
 
 #include "resource_mess.h"
 
@@ -39,7 +38,7 @@ struct State
 	}
 
 	void gui() {
-		ImGui::Begin("State");
+		ImGui::Begin( "State" );
 		ImGui::End();
 	}
 } s;
@@ -49,19 +48,20 @@ bool TrijamRunGame() {
 	bool restart = false;
 	s.reset();
 
-	PlaySound(SND_START);
+	PlaySound( SND_START );
 
-	RenderTexture2D render = LoadRenderTexture(SCRWID, SCRHEI);
+	RenderTexture2D render = LoadRenderTexture( SCRWID, SCRHEI );
 
-	while (!WindowShouldClose()) {
+	while ( !WindowShouldClose() )
+	{
 		// flux::update(GetFrameTime());
-		gFlux.update(GetFrameTime());
+		gFlux.update( GetFrameTime() );
 
 		gWorld.update();
 
-		BeginTextureMode(render);
+		BeginTextureMode( render );
 
-		ClearBackground(BLACK);
+		ClearBackground( BLACK );
 
 		gWorld.render();
 
@@ -69,26 +69,26 @@ bool TrijamRunGame() {
 
 		BeginDrawing();
 		rlImGuiBegin();
-		
-		ClearBackground(BLACK);
+
+		ClearBackground( BLACK );
 
 		//BeginShaderMode(s.s.blur);
 		//SetShaderValueTexture(s.s.blur, s.s.uniform_blur_lut, s.t.baselut);
 
-		DrawTexturePro(render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE);
+		DrawTexturePro( render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE );
 
 		//EndShaderMode();
 
 #if _DEBUG
 		gTex.Gui();
 		gShd.Gui();
-		ImGui::Begin("Entities");
-		gWorld.forEach<entity>([](entity *e) { e->gui(); });
+		ImGui::Begin( "Entities" );
+		gWorld.forEach<entity>( []( entity *e ) { e->gui(); } );
 		ImGui::End();
 		s.gui();
 #endif
 
-		DoFadeInAnimation(fadein);
+		DoFadeInAnimation( fadein );
 
 		rlImGuiEnd();
 		EndDrawing();
@@ -101,4 +101,4 @@ END:
 	return restart;
 }
 
-NS_END
+}

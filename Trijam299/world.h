@@ -1,6 +1,7 @@
 #include "entity.h"
 #include <list>
 #include <memory>
+#include <algorithm>
 
 struct World {
 	std::list<std::unique_ptr<entity>> entities;
@@ -31,10 +32,27 @@ struct World {
 	}
 
 	void render() {
-		for (auto &e : entities) {
+		entity **ents = new entity *[entities.size()];
+		entity **top = ents;
+		for ( auto &e : entities )
+		{
+			*top = &*e;
+			top++;
+		}
+
+		std::stable_sort( ents, ents + entities.size(), []( entity *l, entity *r )
+			{
+				return l->zLayer < r->zLayer;
+			});
+
+		for ( int i = 0; i < entities.size(); i++ )
+		{
+			entity *e = ents[i];
 			if (e->removed) continue;
 			e->render();
 		}
+
+		delete[] ents;
 	}
 
 	template <class Type, class Fn>

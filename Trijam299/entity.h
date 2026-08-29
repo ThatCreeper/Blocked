@@ -9,6 +9,7 @@ struct entity;
 struct entity {
 	flux::Group tw;
 	bool removed = false;
+	int zLayer = 0;
 
 	virtual ~entity() {
 		if (!removed) onRemove();

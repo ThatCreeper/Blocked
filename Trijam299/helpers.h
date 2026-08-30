@@ -103,3 +103,5 @@ inline float NonPeriodic( float seed, float ratea, float x )
 
 	return normalized;
 }
+
+#define DELTA (GetFrameTime())

@@ -56,7 +56,7 @@ bool TrijamRunGame() {
 	while ( !WindowShouldClose() )
 	{
 		// flux::update(GetFrameTime());
-		gFlux.update( GetFrameTime() );
+		gFlux.update( DELTA );
 
 		gWorld.update();
 

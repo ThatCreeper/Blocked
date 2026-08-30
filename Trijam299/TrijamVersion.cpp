@@ -38,6 +38,7 @@ struct State
 	}
 
 	void gui() {
+#define FDRAG( f ) ImGui::DragFloat( #f, &f );
 		ImGui::Begin( "State" );
 		ImGui::End();
 	}

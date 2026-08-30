@@ -91,3 +91,15 @@ inline float SInterp(float from, float to, float x, float max) {
 	float i = SInterp(x, max);
 	return from + (to - from) * i;
 }
+
+inline float NonPeriodic( float seed, float ratea, float x )
+{
+	float starta = std::hash<float>()( seed );
+	float startb = std::hash<float>()( seed + 1 );
+	
+	float raw = sinf( starta + ratea * x * 5 ) + sinf( startb + ratea * PI * 2 );
+
+	float normalized = ( raw / 4 ) + 0.5f;
+
+	return normalized;
+}

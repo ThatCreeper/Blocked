@@ -19,8 +19,12 @@ static float GetEasedValue(flux::Easing easing, float value) {
 		return value * value;
 	case flux::EASE_QUARTOUT:
 		return 1 - powf(1 - value, 4);
+	case flux::EASE_BACKOUT:
+		return 1 + (1.70158 + 1) * powf(value - 1, 3) + 1.70158 * powf(value - 1, 2);
+	case flux::EASE_EXPOOUT:
+		return value >= 1 ? 1 : 1 - powf(2, -10 * value);
 	}
-	throw; // See comment at top of function.
+	return value; // See comment at top of function.
 }
 
 // NOTE: cadenr 8/27/2026 HIDDEN. PROBABLY NOT GOOD TO USE.

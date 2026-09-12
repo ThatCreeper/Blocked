@@ -53,7 +53,7 @@ bool PickFlags() {
 		ClearBackground(BLACK);
 
 		// TODO: Replace this.
-		DrawText("Edition of Weaken Spot:", 15, 15, 20, WHITE);
+		DrawText("Edition of The Sheep and the Bridge:", 15, 15, 20, WHITE);
 
 		DrawLine(15, 45, 395, 45, overflow);
 		DrawLine(15, 85, 395, 85, overflow);
@@ -77,14 +77,14 @@ int main() {
 	LoadGlobState();
 
 	SetConfigFlags(FLAG_VSYNC_HINT);
-	InitWindow(SCRWID, SCRHEI, "Weaken Spot");
+	InitWindow(SCRWID, SCRHEI, "The Sheep and the Bridge");
 	
 #ifdef _WINDOWS
 	if ( GetWindowScaleDPI().x == 2 )
 	{
 		CloseWindow();
 		SetConfigFlags( FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI );
-		InitWindow( SCRWID, SCRHEI, "Weaken Spot" );
+		InitWindow( SCRWID, SCRHEI, "The Sheep and the Bridge" );
 	}
 #endif
 	

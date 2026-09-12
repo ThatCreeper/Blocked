@@ -9,7 +9,6 @@ struct World {
 	// Entity should be added with `new` and should not be deleted
 	void add(entity *e) {
 		entities.emplace_back(e);
-		e->spawnRenderer();
 		e->init();
 	}
 
@@ -28,7 +27,7 @@ struct World {
 			if (e->removed) continue;
 			e->update();
 		}
-		std::erase_if(entities, [](const auto &e) { return e->removed; });
+		std::erase_if(entities, [](const auto &e) { return e->mRefCount <= 0 && e->removed; });
 	}
 
 	void render() {

@@ -150,6 +150,7 @@ struct Player : entity
 
 		float move_speed = DELTA * 300;
 
+		// ARROWS
 		if (IsKeyDown(KEY_LEFT))
 			mX -= move_speed;
 		if (IsKeyDown(KEY_RIGHT))
@@ -159,8 +160,27 @@ struct Player : entity
 		if (IsKeyDown(KEY_DOWN))
 			mY += move_speed;
 
+		// VEL MOUSE
+		//float velX = GetMouseX() - mX;
+		//float velY = GetMouseY() - mY;
+		//float velD = Dist(velX, velY);
+		//if (velD > FLT_EPSILON)
+		//{
+		//	velX = velX / velD * Clamp(velD, 0.0, move_speed);
+		//	velY = velY / velD * Clamp(velD, 0.0, move_speed);
+		//	mX += velX;
+		//	mY += velY;
+		//}
+
+		// LERP MOUSE
+		//mX = Lerp(mX, GetMouseX(), DELTA * 10, 1);
+		//mY = Lerp(mY, GetMouseY(), DELTA * 10, 1);
+
 		mY = Clamp(mY, 0, SCRHEI);
 		mX = Clamp(mX, ARENA_START_X, ARENA_MAX_X);
+
+
+
 
 		// Sheep Grapple
 		std::erase_if(mTetheredSheep, [](Sheep *sheep)

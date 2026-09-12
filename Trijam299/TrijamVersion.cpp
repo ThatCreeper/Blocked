@@ -148,7 +148,7 @@ struct Player : entity
 	void update() override {
 		base::update();
 
-		float move_speed = DELTA * 300;
+		float move_speed = DELTA * 300.0 / (1.0 + mTetheredSheep.size() * 0.1f);
 
 		// ARROWS
 		if (IsKeyDown(KEY_LEFT))

@@ -66,7 +66,7 @@ inline float Dist(float x, float y) {
 	return sqrtf(x * x + y * y);
 }
 
-inline float Lerp(float from, float to, float x, float max) {
+inline float Lerp(float from, float to, float x, float max = 1) {
 	float t = x / max;
 	return from + (to - from) * t;
 }

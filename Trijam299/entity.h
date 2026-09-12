@@ -19,6 +19,10 @@ struct entity {
 
 	virtual void init() {}
 	virtual void onRemove() {}
+	void remove() {
+		onRemove();
+		removed = true;
+	}
 
 	virtual void update() {
 		tw.update(GetFrameTime());

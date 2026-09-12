@@ -12,6 +12,11 @@
 #define ARENA_START_X ((SCRWID - ARENA_WID) / 2)
 #define ARENA_MAX_X (ARENA_START_X + ARENA_WID)
 
+#define Z_LAYER_NORMAL 0
+#define Z_LAYER_ENEMY 1
+#define Z_LAYER_PLAYER 2
+#define Z_LAYER_OVERLAY 3
+
 namespace TrijamVersion
 {
 
@@ -25,8 +30,14 @@ World gWorld;
 struct Player;
 struct State
 {
-	Player *player;
+	Player *player = nullptr;
 	int score = 0;
+	int isCutsceneCount = 0;
+	float myHealth = 1;
+	float enemyHealth = 1;
+	float myHealthShake = 0;
+	float enemyHealthShake = 0;
+	float healthVisible = 0;
 
 	void reset()
 	{
@@ -47,10 +58,17 @@ struct State
 
 	void gui() {
 #define FDRAG( f ) ImGui::DragFloat( #f, &f );
+#define FRANGE( f, m, M ) ImGui::SliderFloat( #f, &f, m, M );
 #define UIM_I_RO(i) ImGui::Text(#i " = %d", i);
 		ImGui::Begin( "State" );
 
 		UIM_I_RO(score);
+		UIM_I_RO(isCutsceneCount);
+		FRANGE(myHealth, 0, 1);
+		FRANGE(enemyHealth, 0, 1);
+		FDRAG(myHealthShake);
+		FDRAG(enemyHealthShake);
+		FRANGE(healthVisible, 0, 1);
 
 		ImGui::End();
 	}
@@ -77,6 +95,10 @@ struct Sheep : entity
 	}
 
 	void update() override {
+		base::update();
+
+		if (s.isCutsceneCount > 0) return;
+
 		mVelY += 300 * DELTA;
 
 		if (mTethered)
@@ -107,20 +129,17 @@ struct Sheep : entity
 			if (mY > SCRHEI)
 			{
 				PlaySound(SND_BASS);
-				respawn();
+				s.myHealthShake = 0.3;
+				s.myHealth -= 0.005f;
 			}
 			if (mY < 0 && mVelY < 0 || mX < 0 || mX > SCRWID)
 			{
 				s.score += 200 * mGrabbedCount;
+				s.enemyHealth -= 0.02f;
+				s.enemyHealthShake = 0.3;
 				PlaySound(SND_FIRE);
-				respawn();
 			}
 		}
-	}
-
-	void respawn() {
-		gWorld.add(new Sheep);
-		removed = true;
 	}
 
 	void initialize() {
@@ -137,6 +156,40 @@ struct Sheep : entity
 	}
 };
 
+struct Bullet : entity
+{
+	DEFINE_ENT(Bullet, entity);
+
+	float mX = 0;
+	float mY = 0;
+
+	Bullet() : base() {
+		initialize();
+	}
+
+	void update() override {
+		base::update();
+
+		if (s.isCutsceneCount > 0) return;
+
+		mY += 200 * DELTA;
+
+		if (mY > SCRHEI + 32)
+		{
+			remove();
+		}
+	}
+
+	void initialize() {
+		mX = GetRandomValue(ARENA_START_X, ARENA_MAX_X);
+		mY = GetRandomValue(-1000, 0);
+	}
+
+	void render() override {
+		DrawCircle(mX, mY, 4, RED);
+	}
+};
+
 struct Player : entity
 {
 	DEFINE_ENT(Player, entity);
@@ -145,8 +198,14 @@ struct Player : entity
 	float mY = SCRHEI / 2;
 	std::vector<Sheep *> mTetheredSheep;
 
+	Player() : base() {
+		zLayer = Z_LAYER_PLAYER;
+	}
+
 	void update() override {
 		base::update();
+
+		if (s.isCutsceneCount > 0) return;
 
 		float move_speed = DELTA * 300.0 / (1.0 + mTetheredSheep.size() * 0.1f);
 
@@ -226,7 +285,42 @@ struct Player : entity
 	}
 
 	void render() override {
+		// HEALTH BARS
+		int shake_amnt = 10;
+		int myShakeX = s.myHealthShake > 0 ? GetRandomValue(-shake_amnt, shake_amnt) * s.myHealthShake : 0;
+		int myShakeY = s.myHealthShake > 0 ? GetRandomValue(-shake_amnt, shake_amnt) * s.myHealthShake : 0;
+		int enemyShakeX = s.enemyHealthShake > 0 ? GetRandomValue(-shake_amnt, shake_amnt) * s.enemyHealthShake : 0;
+		int enemyShakeY = s.enemyHealthShake > 0 ? GetRandomValue(-shake_amnt, shake_amnt) * s.enemyHealthShake : 0;
+
+		if (s.healthVisible > 0)
+		{
+			DrawRectangle(
+				Lerp(-32, ARENA_START_X - 32 - 4, s.healthVisible) + myShakeX,
+				4 + myShakeY,
+				32, SCRHEI - 8,
+				MAGENTA);
+			DrawRectangle(
+				Lerp(SCRWID, ARENA_MAX_X + 32, s.healthVisible) + enemyShakeX,
+				4 + enemyShakeY,
+				32, SCRHEI - 8,
+				MAGENTA);
+
+			DrawRectangle(
+				Lerp(-32, ARENA_START_X - 32 - 4, s.healthVisible) + myShakeX,
+				4 + (SCRHEI - 8) * (1 - s.myHealth) + myShakeY,
+				32, (SCRHEI - 8) * s.myHealth,
+				GREEN);
+			DrawRectangle(
+				Lerp(SCRWID, ARENA_MAX_X + 32, s.healthVisible) + enemyShakeX,
+				4 + (SCRHEI - 8) * (1 - s.enemyHealth) + enemyShakeY,
+				32, (SCRHEI - 8) * s.enemyHealth,
+				RED);
+		}
+
+		// TRUE PLAYER
+		
 		DrawCircleLines(mX, mY, 16, GREEN);
+		DrawCircleLines(mX, mY, 8, GREEN);
 
 		for (Sheep *sheep : mTetheredSheep)
 		{
@@ -263,23 +357,66 @@ struct Player : entity
 	}
 };
 
+struct PhaseOne : entity
+{
+	DEFINE_ENT(PhaseOne, entity);
+
+	float mTimer = 0;
+
+	void update() override
+	{
+		mTimer += DELTA;
+		if (mTimer > 0.8f)
+		{
+			mTimer = 0;
+			gWorld.add(new Sheep);
+		}
+	}
+};
+
+struct IntroCutscene : entity
+{
+	DEFINE_ENT(IntroCutscene, entity);
+
+	IntroCutscene() : base()
+	{
+		zLayer = Z_LAYER_OVERLAY;
+		s.isCutsceneCount++;
+	}
+
+	void onRemove() override {
+		s.isCutsceneCount--;
+		gFlux.to(2)->with(&s.healthVisible, 1)->ease(flux::EASE_BACKOUT);
+		gWorld.add(new PhaseOne);
+	}
+
+	void update() override {
+		if (IsKeyPressed(KEY_Z))
+		{
+			remove();
+		}
+	}
+
+	void render() override {
+		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(BLACK, 0.5));
+	}
+};
+
 bool TrijamRunGame() {
 	PlaySound(SND_START);
 	bool restart = false;
 	s.reset();
 
+	gWorld.add(new IntroCutscene);
 	gWorld.add(s.player = new Player);
-
-	for (int i = 0; i < 10; i++)
-	{
-		gWorld.add(new Sheep());
-	}
 
 	while ( !WindowShouldClose() )
 	{
 		// flux::update(GetFrameTime());
 		gFlux.update( DELTA );
 
+		s.myHealthShake -= DELTA;
+		s.enemyHealthShake -= DELTA;
 		gWorld.update();
 
 		BeginDrawing();
@@ -292,7 +429,14 @@ bool TrijamRunGame() {
 
 		gWorld.render();
 
-		DrawKeybindBar("[Z] Grab Sheep [X] Release [C] Fire", "[Arrows] Move");
+		if (s.isCutsceneCount > 0)
+		{
+			DrawKeybindBarSide("[Z] Continue...", "");
+		}
+		else
+		{
+			DrawKeybindBarSide("[Z] Grab Sheep [X] Release [C] Fire", "[Arrows] Move");
+		}
 
 #if _DEBUG
 		gTex.Gui();

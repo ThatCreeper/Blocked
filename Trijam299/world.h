@@ -5,6 +5,7 @@
 
 struct World {
 	std::list<std::unique_ptr<entity>> entities;
+	std::vector<entity *> render_sorted_ents_dnu;
 
 	// Entity should be added with `new` and should not be deleted
 	void add(entity *e) {
@@ -13,8 +14,7 @@ struct World {
 	}
 
 	void remove(entity *e) {
-		e->onRemove();
-		e->removed = true;
+		e->remove();
 	}
 
 	void clear() {
@@ -31,27 +31,23 @@ struct World {
 	}
 
 	void render() {
-		entity **ents = new entity *[entities.size()];
-		entity **top = ents;
+		render_sorted_ents_dnu.clear();
+
 		for ( auto &e : entities )
 		{
-			*top = &*e;
-			top++;
+			render_sorted_ents_dnu.push_back(e.get());
 		}
 
-		std::stable_sort( ents, ents + entities.size(), []( entity *l, entity *r )
+		std::stable_sort(render_sorted_ents_dnu.begin(), render_sorted_ents_dnu.end(), [](entity *l, entity *r)
 			{
 				return l->zLayer < r->zLayer;
 			});
 
-		for ( int i = 0; i < entities.size(); i++ )
+		for ( entity *e : render_sorted_ents_dnu )
 		{
-			entity *e = ents[i];
 			if (e->removed) continue;
 			e->render();
 		}
-
-		delete[] ents;
 	}
 
 	template <class Type, class Fn>

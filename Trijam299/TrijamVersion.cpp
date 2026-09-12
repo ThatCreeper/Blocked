@@ -62,12 +62,15 @@ struct Sheep : entity
 
 	float mX = 0;
 	float mY = 0;
+	float mLastX = 0;
+	float mLastY = 0;
 	float mVelX = 0;
 	float mVelY = 300;
 	bool mTethered = false;
 	float mTetherX = 0;
 	float mTetherY = 0;
 	float mTetherDist = 0;
+	int mGrabbedCount = 0;
 
 	Sheep() : base() {
 		initialize();
@@ -75,11 +78,10 @@ struct Sheep : entity
 
 	void update() override {
 		mVelY += 300 * DELTA;
-		if (mVelY > 300) mVelY = 300;
 
 		if (mTethered)
 		{
-
+			mTetherDist += 64 * DELTA;
 			float dist = Dist(mX, mY, mTetherX, mTetherY);
 			if (dist > mTetherDist)
 			{
@@ -88,17 +90,31 @@ struct Sheep : entity
 				float targetX = mTetherX + (mX - mTetherX) / dist * mTetherDist;
 				float targetY = mTetherY + (mY - mTetherY) / dist * mTetherDist;
 
-				mVelX += (targetX - oldX);
-				mVelY += (targetY - oldY);
+				mVelX += (targetX - oldX) * DELTA * 300;
+				mVelY += (targetY - oldY) * DELTA * 300;
 			}
+		}
+		else
+		{
+			if (mVelY > 300) mVelY = 300;
 		}
 
 		mX += mVelX * DELTA;
 		mY += mVelY * DELTA;
 
-		if (mY > SCRHEI)
+		if (!mTethered)
 		{
-			respawn();
+			if (mY > SCRHEI)
+			{
+				PlaySound(SND_BASS);
+				respawn();
+			}
+			if (mY < 0 && mVelY < 0 || mX < 0 || mX > SCRWID)
+			{
+				s.score += 200 * mGrabbedCount;
+				PlaySound(SND_FIRE);
+				respawn();
+			}
 		}
 	}
 
@@ -110,10 +126,13 @@ struct Sheep : entity
 	void initialize() {
 		mX = GetRandomValue(ARENA_START_X, ARENA_MAX_X);
 		mY = GetRandomValue(-1000, 0);
+		mLastX = mX;
+		mLastY = mY;
 		mTethered = false;
 	}
 
 	void render() override {
+		DrawCircleLines(mLastX, mLastY, 8, Fade(WHITE, 0.5f));
 		DrawCircleLines(mX, mY, 8, WHITE);
 	}
 };
@@ -124,7 +143,7 @@ struct Player : entity
 
 	float mX = SCRWID / 2;
 	float mY = SCRHEI / 2;
-	Sheep *mTetheredSheep = nullptr;
+	std::vector<Sheep *> mTetheredSheep;
 
 	void update() override {
 		base::update();
@@ -144,42 +163,59 @@ struct Player : entity
 		mX = Clamp(mX, ARENA_START_X, ARENA_MAX_X);
 
 		// Sheep Grapple
-		if (mTetheredSheep != nullptr && mTetheredSheep->removed)
-		{
-			mTetheredSheep->FreeRef();
-			mTetheredSheep = nullptr;
-		}
+		std::erase_if(mTetheredSheep, [](Sheep *sheep)
+			{
+				if (sheep->removed)
+				{
+					sheep->FreeRef();
+					return true;
+				}
+				return false;
+			});
 
 		if (IsKeyPressed(KEY_Z))
 		{
-			mTetheredSheep = getNearestSheep();
-			mTetheredSheep->TakeRef();
-			mTetheredSheep->mTethered = true;
-			mTetheredSheep->mTetherDist = Dist(mX, mY, mTetheredSheep->mX, mTetheredSheep->mY);
+			Sheep *sheep = getNearestSheep();
+			if (sheep != nullptr)
+			{
+				mTetheredSheep.push_back(sheep);
+				sheep->TakeRef();
+				sheep->mTethered = true;
+				sheep->mTetherDist = Dist(mX, mY, sheep->mX, sheep->mY);
+				sheep->mGrabbedCount = 0;
+				PlaySound(SND_MENU);
+			}
 		}
-		if (IsKeyDown(KEY_Z) && mTetheredSheep != nullptr)
+
+		for (Sheep *sheep : mTetheredSheep)
 		{
-			mTetheredSheep->mTetherX = mX;
-			mTetheredSheep->mTetherY = mY;
+			sheep->mTetherX = mX;
+			sheep->mTetherY = mY;
+			sheep->mGrabbedCount = mTetheredSheep.size();
 		}
-		if (IsKeyReleased(KEY_Z) && mTetheredSheep != nullptr)
+
+		if (IsKeyReleased(KEY_X))
 		{
-			mTetheredSheep->mTethered = false;
-			mTetheredSheep->FreeRef();
-			mTetheredSheep = nullptr;
+			for (Sheep *sheep : mTetheredSheep)
+			{
+				sheep->mTethered = false;
+				sheep->FreeRef();
+			}
+			mTetheredSheep.clear();
 		}
 	}
 
 	void render() override {
 		DrawCircleLines(mX, mY, 16, GREEN);
 
-		if (mTetheredSheep != nullptr)
+		for (Sheep *sheep : mTetheredSheep)
 		{
-			DrawLine(mX, mY, mTetheredSheep->mX, mTetheredSheep->mY, WHITE);
+			DrawLine(mX, mY, sheep->mX, sheep->mY, WHITE);
 		}
-		else
+
+		Sheep *sheep = getNearestSheep();
+		if (sheep != nullptr)
 		{
-			Sheep *sheep = getNearestSheep();
 			DrawLine(mX, mY, sheep->mX, sheep->mY, YELLOW);
 		}
 	}
@@ -187,9 +223,15 @@ struct Player : entity
 	Sheep *getNearestSheep()
 	{
 		Sheep *linedSheep = nullptr;
-		float dist = INFINITY;
+		float dist = 200;
 		gWorld.forEach<Sheep>([ & ](Sheep *sheep)
 			{
+				if (sheep->mTethered) return;
+				if (sheep->mY < 0 || sheep->mY > SCRHEI || sheep->mX < ARENA_START_X || sheep->mX > ARENA_MAX_X)
+				{
+					return;
+				}
+
 				float d = Dist(mX, mY, sheep->mX, sheep->mY);
 				if (d < dist)
 				{
@@ -230,7 +272,7 @@ bool TrijamRunGame() {
 
 		gWorld.render();
 
-		DrawKeybindBar("[Z] Grab/Release Sheep [X] Fire", "[Arrows] Move");
+		DrawKeybindBar("[Z] Grab Sheep [X] Release [C] Fire", "[Arrows] Move");
 
 #if _DEBUG
 		gTex.Gui();

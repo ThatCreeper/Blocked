@@ -35,6 +35,7 @@ struct State
 	int isCutsceneCount = 0;
 	float myHealth = 1;
 	float enemyHealth = 1;
+	float enemyMaxHealth = 1;
 	float myHealthShake = 0;
 	float enemyHealthShake = 0;
 	float healthVisible = 0;
@@ -329,6 +330,7 @@ struct Player : entity
 
 		if (s.healthVisible > 0)
 		{
+			float enHealth = s.enemyHealth / s.enemyMaxHealth;
 			DrawRectangle(
 				Lerp(-32, ARENA_START_X - 32 - 4, s.healthVisible) + myShakeX,
 				4 + myShakeY,
@@ -347,8 +349,8 @@ struct Player : entity
 				GREEN);
 			DrawRectangle(
 				Lerp(SCRWID, ARENA_MAX_X + 32, s.healthVisible) + enemyShakeX,
-				4 + (SCRHEI - 8) * (1 - s.enemyHealth) + enemyShakeY,
-				32, (SCRHEI - 8) * s.enemyHealth,
+				4 + (SCRHEI - 8) * (1 - enHealth) + enemyShakeY,
+				32, (SCRHEI - 8) * enHealth,
 				RED);
 		}
 
@@ -411,7 +413,8 @@ struct PhaseThree : entity
 	{
 		zLayer = Z_LAYER_ENEMY;
 		s.myHealth = 1;
-		s.enemyHealth = 1;
+		s.enemyHealth = 4;
+		s.enemyMaxHealth = 4;
 	}
 
 	float mTimer = 0;
@@ -426,7 +429,7 @@ struct PhaseThree : entity
 			gWorld.add(new Sheep);
 		}
 		mTimer2 += DELTA;
-		if (mTimer2 > 0.7f)
+		if (mTimer2 > 0.3f)
 		{
 			mTimer2 = 0;
 			gWorld.add(new Bullet);
@@ -520,13 +523,13 @@ struct PhaseTwo : entity
 			//gWorld.add(new Sheep);
 		}
 		mTimer2 += DELTA;
-		if (mTimer2 > 0.6f)
+		if (mTimer2 > 0.1f)
 		{
 			mTimer2 = 0;
 			gWorld.add(new Bullet);
 		}
 
-		s.enemyHealth -= DELTA / 20.f;
+		s.enemyHealth -= DELTA / 25.f;
 
 		if (s.enemyHealth <= 0)
 		{
@@ -915,8 +918,8 @@ bool TrijamRunGame() {
 		// Arena
 		//DrawRectangleLines(ARENA_START_X, 0, ARENA_WID, SCRHEI, RED);
 		DrawTexture(gTex.bg2, 0, 0, WHITE);
-		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, SCRHEI) - SCRHEI, WHITE);
-		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, SCRHEI), WHITE);
+		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 110, SCRHEI) - SCRHEI, WHITE);
+		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 110, SCRHEI), WHITE);
 
 		gWorld.render();
 

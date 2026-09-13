@@ -13,8 +13,8 @@
 #define ARENA_MAX_X (ARENA_START_X + ARENA_WID)
 
 #define Z_LAYER_NORMAL 0
-#define Z_LAYER_ENEMY 1
-#define Z_LAYER_PLAYER 2
+#define Z_LAYER_PLAYER 1
+#define Z_LAYER_ENEMY 2
 #define Z_LAYER_OVERLAY 3
 
 namespace TrijamVersion
@@ -38,6 +38,7 @@ struct State
 	float myHealthShake = 0;
 	float enemyHealthShake = 0;
 	float healthVisible = 0;
+	bool wasGameVictory = false;
 
 	void reset()
 	{
@@ -60,6 +61,7 @@ struct State
 #define FDRAG( f ) ImGui::DragFloat( #f, &f );
 #define FRANGE( f, m, M ) ImGui::SliderFloat( #f, &f, m, M );
 #define UIM_I_RO(i) ImGui::Text(#i " = %d", i);
+#define BCHECK(i) ImGui::Checkbox(#i, &i);
 		ImGui::Begin( "State" );
 
 		UIM_I_RO(score);
@@ -69,8 +71,21 @@ struct State
 		FDRAG(myHealthShake);
 		FDRAG(enemyHealthShake);
 		FRANGE(healthVisible, 0, 1);
+		BCHECK(wasGameVictory);
 
 		ImGui::End();
+	}
+
+	void damageMe(float dmg)
+	{
+		myHealthShake = 0.3;
+		myHealth -= dmg;
+	}
+
+	void damageEnemy(float dmg)
+	{
+		enemyHealthShake = 0.3;
+		enemyHealth -= dmg;
 	}
 } s;
 
@@ -129,15 +144,15 @@ struct Sheep : entity
 			if (mY > SCRHEI)
 			{
 				PlaySound(SND_BASS);
-				s.myHealthShake = 0.3;
-				s.myHealth -= 0.005f;
+				s.damageMe(0.005f);
+				remove();
 			}
 			if (mY < 0 && mVelY < 0 || mX < 0 || mX > SCRWID)
 			{
 				s.score += 200 * mGrabbedCount;
-				s.enemyHealth -= 0.02f;
-				s.enemyHealthShake = 0.3;
+				s.damageEnemy(0.02f);
 				PlaySound(SND_FIRE);
+				remove();
 			}
 		}
 	}
@@ -164,6 +179,7 @@ struct Bullet : entity
 	float mY = 0;
 
 	Bullet() : base() {
+		zLayer = Z_LAYER_ENEMY;
 		initialize();
 	}
 
@@ -187,6 +203,8 @@ struct Bullet : entity
 
 	void render() override {
 		DrawCircle(mX, mY, 4, RED);
+		DrawCircleLines(mX, mY, 12, Fade(RED, 0.8));
+		DrawCircleLines(mX, mY, 16, Fade(RED, 0.5));
 	}
 };
 
@@ -238,6 +256,17 @@ struct Player : entity
 		mY = Clamp(mY, 0, SCRHEI);
 		mX = Clamp(mX, ARENA_START_X, ARENA_MAX_X);
 
+
+		// bullets
+		gWorld.forEach<Bullet>([ & ](Bullet *bullet)
+			{
+				if (Dist(mX, mY, bullet->mX, bullet->mY) < 8 + 4)
+				{
+					bullet->remove();
+					PlaySound(SND_DIE);
+					s.damageMe(0.1f);
+				}
+			});
 
 
 
@@ -362,6 +391,7 @@ struct PhaseOne : entity
 	DEFINE_ENT(PhaseOne, entity);
 
 	float mTimer = 0;
+	float mTimer2 = 0;
 
 	void update() override
 	{
@@ -370,6 +400,12 @@ struct PhaseOne : entity
 		{
 			mTimer = 0;
 			gWorld.add(new Sheep);
+		}
+		mTimer2 += DELTA;
+		if (mTimer2 > 1.9f)
+		{
+			mTimer2 = 0;
+			gWorld.add(new Bullet);
 		}
 	}
 };
@@ -402,6 +438,50 @@ struct IntroCutscene : entity
 	}
 };
 
+bool GameOverScreen() {
+	while (!WindowShouldClose())
+	{
+		BeginDrawing();
+		ClearBackground(RED);
+
+		const char *t1 = "Morale Destroyed!";
+		const char *t2 = "Too many of your sheep died!";
+
+		int wid1 = MeasureText(t1, 40);
+		int wid2 = MeasureText(t2, 30);
+		DrawText(t1, (SCRWID - wid1) / 2, SCRHEI / 2 - 40 - 4, 40, WHITE);
+		DrawText(t2, (SCRWID - wid2) / 2, SCRHEI / 2 + 4, 30, WHITE);
+
+		DrawKeybindBar("[Refresh] Play again", "");
+
+		EndDrawing();
+	}
+
+	return false;
+}
+
+bool GameWinScreen() {
+	while (!WindowShouldClose())
+	{
+		BeginDrawing();
+		ClearBackground(DARKGREEN);
+
+		const char *t1 = "You Won!";
+		const char *t2 = "You defeated the Sheepmancer! All is right...";
+
+		int wid1 = MeasureText(t1, 40);
+		int wid2 = MeasureText(t2, 30);
+		DrawText(t1, (SCRWID - wid1) / 2, SCRHEI / 2 - 40 - 4, 40, WHITE);
+		DrawText(t2, (SCRWID - wid2) / 2, SCRHEI / 2 + 4, 30, WHITE);
+
+		DrawKeybindBar("[Refresh] Play again", "");
+
+		EndDrawing();
+	}
+
+	return false;
+}
+
 bool TrijamRunGame() {
 	PlaySound(SND_START);
 	bool restart = false;
@@ -418,6 +498,16 @@ bool TrijamRunGame() {
 		s.myHealthShake -= DELTA;
 		s.enemyHealthShake -= DELTA;
 		gWorld.update();
+
+		if (s.wasGameVictory)
+		{
+			return GameWinScreen();
+		}
+		if (s.myHealth <= 0)
+		{
+			return GameOverScreen();
+		}
+
 
 		BeginDrawing();
 		rlImGuiBegin();

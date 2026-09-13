@@ -9,6 +9,20 @@ void DrawKeybindBar(const char *left, const char *right, bool bg) {
 	DrawText(right, SCRWID - 10 - rlen, SCRHEI - 25, 20, WHITE);
 }
 
+void DrawKeybindBarSide(const char *left, const char *right, bool bg) {
+	rlPushMatrix();
+	rlRotatef(90, 0, 0, 1);
+
+	if (bg)
+		DrawRectangle(0, -30, SCRHEI, 30, Fade(BLACK, 0.7f));
+	DrawLine(0, -31, SCRHEI, -31, WHITE); // I dislike the number "31" here, but it is correct. Sad.
+	DrawText(left, 10, -25, 20, WHITE);
+	int rlen = MeasureText(right, 20);
+	DrawText(right, SCRHEI - 10 - rlen, -25, 20, WHITE);
+
+	rlPopMatrix();
+}
+
 void DoFadeOutAnimation() {
 	int top = 0;
 

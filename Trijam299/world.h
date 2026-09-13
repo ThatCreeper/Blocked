@@ -5,21 +5,20 @@
 
 struct World {
 	std::list<std::unique_ptr<entity>> entities;
+	std::vector<entity *> render_sorted_ents_dnu;
 
 	// Entity should be added with `new` and should not be deleted
 	void add(entity *e) {
 		entities.emplace_back(e);
-		e->spawnRenderer();
 		e->init();
 	}
 
 	void remove(entity *e) {
-		e->onRemove();
-		e->removed = true;
+		e->remove();
 	}
 
 	void clear() {
-		for (auto &e : entities) e->onRemove();
+		for (auto &e : entities) e->remove();
 		entities.clear();
 	}
 
@@ -28,31 +27,27 @@ struct World {
 			if (e->removed) continue;
 			e->update();
 		}
-		std::erase_if(entities, [](const auto &e) { return e->removed; });
+		std::erase_if(entities, [](const auto &e) { return e->mRefCount <= 0 && e->removed; });
 	}
 
 	void render() {
-		entity **ents = new entity *[entities.size()];
-		entity **top = ents;
-		for ( auto &e : entities )
+		render_sorted_ents_dnu.clear();
+
+		for (auto &e : entities)
 		{
-			*top = &*e;
-			top++;
+			render_sorted_ents_dnu.push_back(e.get());
 		}
 
-		std::stable_sort( ents, ents + entities.size(), []( entity *l, entity *r )
+		std::stable_sort(render_sorted_ents_dnu.begin(), render_sorted_ents_dnu.end(), [](entity *l, entity *r)
 			{
 				return l->zLayer < r->zLayer;
 			});
 
-		for ( int i = 0; i < entities.size(); i++ )
+		for (entity *e : render_sorted_ents_dnu)
 		{
-			entity *e = ents[i];
 			if (e->removed) continue;
 			e->render();
 		}
-
-		delete[] ents;
 	}
 
 	template <class Type, class Fn>

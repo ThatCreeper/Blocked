@@ -55,9 +55,9 @@ struct Textures
 #undef TEXTURES
 
 #define SHADERS \
-	T(blur, nullptr, "blur.fs")
+	//T(blur, nullptr, "blur.fs")
 #define UNIFORMS \
-	U(blur, lut, "lut")
+	//U(blur, lut, "lut")
 struct Shaders
 {
 #define T(a, b, c) Shader a;

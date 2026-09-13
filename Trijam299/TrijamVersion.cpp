@@ -8,6 +8,8 @@
 #include "entity.h"
 #include "world.h"
 
+#define Z_LAYER_NORMAL 0
+
 namespace TrijamVersion
 {
 
@@ -51,8 +53,6 @@ bool TrijamRunGame() {
 
 	PlaySound( SND_START );
 
-	RenderTexture2D render = LoadRenderTexture( SCRWID, SCRHEI );
-
 	while ( !WindowShouldClose() )
 	{
 		// flux::update(GetFrameTime());
@@ -60,31 +60,18 @@ bool TrijamRunGame() {
 
 		gWorld.update();
 
-		BeginTextureMode( render );
-
-		ClearBackground( BLACK );
-
-		gWorld.render();
-
-		EndTextureMode();
-
 		BeginDrawing();
 		rlImGuiBegin();
 
 		ClearBackground( BLACK );
 
-		//BeginShaderMode(s.s.blur);
-		//SetShaderValueTexture(s.s.blur, s.s.uniform_blur_lut, s.t.baselut);
-
-		DrawTexturePro( render.texture, { 0, 0, SCRWID, -SCRHEI }, { 0, 0, SCRWID, SCRHEI }, { 0, 0 }, 0, WHITE );
-
-		//EndShaderMode();
+		gWorld.render();
 
 #if _DEBUG
 		gTex.Gui();
 		gShd.Gui();
 		ImGui::Begin( "Entities" );
-		gWorld.forEach<entity>( []( entity *e ) { e->gui(); } );
+		gWorld.forEach<entity>( []( entity *e ) { e->trueGui(); } );
 		ImGui::End();
 		s.gui();
 #endif

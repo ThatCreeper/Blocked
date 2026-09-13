@@ -12,6 +12,7 @@ This is the repository that includes the source code for the following games:
 | **Shot** | `trijam309` | https://creeper-host.itch.io/shot | A strange, nigh painful Taiko clone. |
 | **Line Crosser** | `trijam311` | https://creeper-host.itch.io/line-crosser | A physics sandbox game where you have to do like a chicken and get to the other side. |
 | **Weaken Spot: a game about killing a baby but not a dog** | `trijam361` | https://creeper-host.itch.io/weaken-spot | An answer to the question, *"How bad does a Trijam game become when you get a bunch of people without gamedev experience to help you."* |
+| **The Sheep and the Bridge** | `trijam389` | https://creeper-host.itch.io/sheep-bridge | A physics-based, sheep-slinging bullet-hell. |
 
 In addition, there are some failed experiments around the cracks:
 | Branch | Description |

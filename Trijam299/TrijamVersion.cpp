@@ -172,8 +172,8 @@ struct Sheep : entity
 	}
 
 	void render() override {
-		DrawCircleLines(mLastX, mLastY, 8, Fade(WHITE, 0.5f));
-		DrawCircleLines(mX, mY, 8, WHITE);
+		DrawCircle(mLastX, mLastY, 8, Fade(WHITE, 0.5f));
+		DrawCircle(mX, mY, 8, WHITE);
 	}
 };
 
@@ -410,9 +410,8 @@ struct PhaseThree : entity
 	PhaseThree() : base()
 	{
 		zLayer = Z_LAYER_ENEMY;
-		gFlux.to(1)
-			->with(&s.myHealth, 1)
-			->with(&s.enemyHealth, 1);
+		s.myHealth = 1;
+		s.enemyHealth = 1;
 	}
 
 	float mTimer = 0;
@@ -505,9 +504,8 @@ struct PhaseTwo : entity
 	PhaseTwo() : base()
 	{
 		zLayer = Z_LAYER_ENEMY;
-		gFlux.to(1)
-			->with(&s.myHealth, 1)
-			->with(&s.enemyHealth, 1);
+		s.myHealth = 1;
+		s.enemyHealth = 1;
 	}
 
 	float mTimer = 0;
@@ -599,9 +597,8 @@ struct PhaseOne : entity
 	PhaseOne() : base()
 	{
 		zLayer = Z_LAYER_ENEMY;
-		gFlux.to(1)
-			->with(&s.myHealth, 1)
-			->with(&s.enemyHealth, 1);
+		s.myHealth = 1;
+		s.enemyHealth = 1;
 		gFlux.to(2)
 			->with(&s.healthVisible, 1)
 			->ease(flux::EASE_BACKOUT);
@@ -719,9 +716,8 @@ struct TutorialPhase : entity
 
 	TutorialPhase() : base()
 	{
-		gFlux.to(1)
-			->with(&s.myHealth, 1)
-			->with(&s.enemyHealth, 1);
+		s.myHealth = 1;
+		s.enemyHealth = 1;
 		zLayer = Z_LAYER_ENEMY;
 	}
 

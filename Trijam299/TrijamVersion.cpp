@@ -919,8 +919,8 @@ bool TrijamRunGame() {
 		// Arena
 		//DrawRectangleLines(ARENA_START_X, 0, ARENA_WID, SCRHEI, RED);
 		DrawTexture(gTex.bg2, 0, 0, WHITE);
-		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, 400) - SCRHEI, WHITE);
-		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, 400), WHITE);
+		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, SCRHEI) - SCRHEI, WHITE);
+		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, SCRHEI), WHITE);
 
 		gWorld.render();
 

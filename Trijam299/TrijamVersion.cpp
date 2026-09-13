@@ -64,7 +64,7 @@ struct State
 #define BCHECK(i) ImGui::Checkbox(#i, &i);
 		ImGui::Begin( "State" );
 
-		UIM_I_RO(score);
+		ImGui::DragInt("score", &score);
 		UIM_I_RO(isCutsceneCount);
 		FRANGE(myHealth, 0, 1);
 		FRANGE(enemyHealth, 0, 1);
@@ -88,6 +88,12 @@ struct State
 		enemyHealth -= dmg;
 	}
 } s;
+
+void DrawCutsceneCaption(const char *text, float alpha)
+{
+	int wid = MeasureText(text, 30);
+	DrawText(text, (SCRWID - wid) / 2, SCRHEI / 2 + (SCRHEI / 2 - 30) / 2 + sinf(GetTime()) * 10, 30, Fade(WHITE, alpha));
+}
 
 struct Sheep : entity
 {
@@ -346,6 +352,18 @@ struct Player : entity
 				RED);
 		}
 
+		// SCORE METER
+		{
+			const char *fmt = TextFormat("SCORE %d", s.score);
+
+			rlPushMatrix();
+			rlRotatef(90, 0, 0, 1);
+
+			DrawText(fmt, 10, -SCRWID + 10, 30, WHITE);
+
+			rlPopMatrix();
+		}
+
 		// TRUE PLAYER
 		
 		DrawCircleLines(mX, mY, 16, GREEN);
@@ -385,10 +403,209 @@ struct Player : entity
 		return linedSheep;
 	}
 };
+struct PhaseThree : entity
+{
+	DEFINE_ENT(PhaseThree, entity);
+
+	PhaseThree() : base()
+	{
+		zLayer = Z_LAYER_ENEMY;
+		gFlux.to(1)
+			->with(&s.myHealth, 1)
+			->with(&s.enemyHealth, 1);
+	}
+
+	float mTimer = 0;
+	float mTimer2 = 0;
+
+	void update() override
+	{
+		mTimer += DELTA;
+		if (mTimer > 0.6f)
+		{
+			mTimer = 0;
+			gWorld.add(new Sheep);
+		}
+		mTimer2 += DELTA;
+		if (mTimer2 > 0.7f)
+		{
+			mTimer2 = 0;
+			gWorld.add(new Bullet);
+		}
+
+		s.enemyHealth -= DELTA / 20.f;
+
+		if (s.enemyHealth <= 0)
+		{
+			remove();
+			s.wasGameVictory = true;
+		}
+	}
+
+	void render() override
+	{
+		DrawTexture(gTex.evil, 0, sinf(GetTime() * 0.3) * 5, WHITE);
+	}
+};
+
+struct PhaseThreeCS : entity
+{
+	DEFINE_ENT(PhaseThreeCS, entity);
+
+	int mIndex = 0;
+
+	PhaseThreeCS() : base()
+	{
+		zLayer = Z_LAYER_OVERLAY;
+		s.isCutsceneCount++;
+		PlaySound(SND_DIE);
+		gWorld.forEach<Sheep>([](Sheep *s) { s->remove(); });
+		gWorld.forEach<Bullet>([](Bullet *s) { s->remove(); });
+	}
+
+	void onRemove() override {
+		s.isCutsceneCount--;
+		gWorld.add(new PhaseThree);
+	}
+
+	void update() override {
+		base::update();
+
+		if (IsKeyPressed(KEY_Z))
+		{
+			mIndex++;
+			PlaySound(SND_MENU);
+
+			if (mIndex > 0)
+			{
+				PlaySound(SND_START);
+				remove();
+			}
+		}
+	}
+
+	void render() override {
+		DrawRectangle(0, 0, SCRWID, SCRHEI, BLACK);
+
+		switch (mIndex)
+		{
+		case 0:
+			DrawTexture(gTex.cs2, 0, 0, WHITE);
+			DrawCutsceneCaption("Fine. But what about this???.", 1);
+			break;
+		}
+	}
+};
+
+
+struct PhaseTwo : entity
+{
+	DEFINE_ENT(PhaseTwo, entity);
+
+	PhaseTwo() : base()
+	{
+		zLayer = Z_LAYER_ENEMY;
+		gFlux.to(1)
+			->with(&s.myHealth, 1)
+			->with(&s.enemyHealth, 1);
+	}
+
+	float mTimer = 0;
+	float mTimer2 = 0;
+
+	void update() override
+	{
+		mTimer += DELTA;
+		if (mTimer > 0.8f)
+		{
+			mTimer = 0;
+			//gWorld.add(new Sheep);
+		}
+		mTimer2 += DELTA;
+		if (mTimer2 > 0.6f)
+		{
+			mTimer2 = 0;
+			gWorld.add(new Bullet);
+		}
+
+		s.enemyHealth -= DELTA / 20.f;
+
+		if (s.enemyHealth <= 0)
+		{
+			remove();
+			gWorld.add(new PhaseThreeCS);
+		}
+	}
+
+	void render() override
+	{
+		DrawTexture(gTex.evil, 0, sinf(GetTime() * 0.3) * 5, WHITE);
+	}
+};
+
+struct PhaseTwoCS : entity
+{
+	DEFINE_ENT(PhaseTwoCS, entity);
+
+	int mIndex = 0;
+
+	PhaseTwoCS() : base()
+	{
+		zLayer = Z_LAYER_OVERLAY;
+		s.isCutsceneCount++;
+		PlaySound(SND_DIE);
+		gWorld.forEach<Sheep>([](Sheep *s) { s->remove(); });
+		gWorld.forEach<Bullet>([](Bullet *s) { s->remove(); });
+	}
+
+	void onRemove() override {
+		s.isCutsceneCount--;
+		gWorld.add(new PhaseTwo);
+	}
+
+	void update() override {
+		base::update();
+
+		if (IsKeyPressed(KEY_Z))
+		{
+			mIndex++;
+			PlaySound(SND_MENU);
+
+			if (mIndex > 0)
+			{
+				PlaySound(SND_START);
+				remove();
+			}
+		}
+	}
+
+	void render() override {
+		DrawRectangle(0, 0, SCRWID, SCRHEI, BLACK);
+
+		switch (mIndex)
+		{
+		case 0:
+			DrawTexture(gTex.cs2, 0, 0, WHITE);
+			DrawCutsceneCaption("Rude. But I have more.", 1);
+			break;
+		}
+	}
+};
 
 struct PhaseOne : entity
 {
 	DEFINE_ENT(PhaseOne, entity);
+
+	PhaseOne() : base()
+	{
+		zLayer = Z_LAYER_ENEMY;
+		gFlux.to(1)
+			->with(&s.myHealth, 1)
+			->with(&s.enemyHealth, 1);
+		gFlux.to(2)
+			->with(&s.healthVisible, 1)
+			->ease(flux::EASE_BACKOUT);
+	}
 
 	float mTimer = 0;
 	float mTimer2 = 0;
@@ -405,8 +622,131 @@ struct PhaseOne : entity
 		if (mTimer2 > 1.9f)
 		{
 			mTimer2 = 0;
-			gWorld.add(new Bullet);
+			//gWorld.add(new Bullet);
 		}
+
+		if (s.enemyHealth <= 0)
+		{
+			remove();
+			gWorld.add(new PhaseTwoCS);
+		}
+	}
+
+	void render() override
+	{
+		DrawTexture(gTex.evil, 0, sinf(GetTime() * 0.3) * 5, WHITE);
+	}
+};
+
+struct MeetingCutscene : entity
+{
+	DEFINE_ENT(MeetingCutscene, entity);
+
+	int mIndex = 0;
+
+	MeetingCutscene() : base()
+	{
+		zLayer = Z_LAYER_OVERLAY;
+		s.isCutsceneCount++;
+		PlaySound(SND_DIE);
+		gWorld.forEach<Sheep>([](Sheep *s) { s->remove(); });
+		gWorld.forEach<Bullet>([](Bullet *s) { s->remove(); });
+	}
+
+	void onRemove() override {
+		s.isCutsceneCount--;
+		gWorld.add(new PhaseOne);
+	}
+
+	void update() override {
+		base::update();
+
+		if (IsKeyPressed(KEY_Z))
+		{
+			mIndex++;
+			PlaySound(SND_MENU);
+
+			if (mIndex > 6)
+			{
+				PlaySound(SND_START);
+				remove();
+			}
+		}
+	}
+
+	void render() override {
+		DrawRectangle(0, 0, SCRWID, SCRHEI, BLACK);
+
+		switch (mIndex)
+		{
+		case 0:
+			DrawTexture(gTex.cs1_1, 0, 0, WHITE);
+			DrawCutsceneCaption("HEY!", 1);
+			break;
+		case 1:
+			DrawTexture(gTex.cs_1_2, 0, 0, WHITE);
+			DrawCutsceneCaption("You made my sheep jump off a bridge.", 1);
+			break;
+		case 2:
+			DrawTexture(gTex.cs1_3, 0, 0, WHITE);
+			DrawCutsceneCaption("Why?", 1);
+			break;
+		case 3:
+			DrawTexture(gTex.cs1_4, 0, 0, WHITE);
+			DrawCutsceneCaption("Because I am the SHEEPMANCER.", 1);
+			break;
+		case 4:
+			DrawTexture(gTex.cs1_5, 0, 0, WHITE);
+			DrawCutsceneCaption("Stealing sheep is just what I do.", 1);
+			break;
+		case 5:
+			DrawTexture(gTex.cs1_6, 0, 0, WHITE);
+			DrawCutsceneCaption("Well you should CUT IT OUT.", 1);
+			break;
+		case 6:
+			DrawTexture(gTex.cs1_7, 0, 0, WHITE);
+			DrawCutsceneCaption("No.", 1);
+			break;
+		}
+	}
+};
+
+struct TutorialPhase : entity
+{
+	DEFINE_ENT(TutorialPhase, entity);
+
+	float mTimer = 0;
+
+	TutorialPhase() : base()
+	{
+		gFlux.to(1)
+			->with(&s.myHealth, 1)
+			->with(&s.enemyHealth, 1);
+		zLayer = Z_LAYER_ENEMY;
+	}
+
+	void update() override
+	{
+		mTimer += DELTA;
+		if (mTimer > 0.8f)
+		{
+			mTimer = 0;
+			gWorld.add(new Sheep);
+		}
+		s.myHealth = 1;
+		s.enemyHealth = 1;
+
+		if (s.score >= 10000)
+		{
+			remove();
+			gWorld.add(new MeetingCutscene);
+		}
+	}
+
+	void render() override
+	{
+		DrawText("Tutorial!", 48, 16, 30, WHITE);
+		DrawText("Hit a score of 10000", 48, 16 + 30 + 8, 20, WHITE);
 	}
 };
 
@@ -414,27 +754,89 @@ struct IntroCutscene : entity
 {
 	DEFINE_ENT(IntroCutscene, entity);
 
+	float mFadeOut = 1;
+	float mText = 0;
+	int mDialog = 0;
+	float mBridge = 0;
+
 	IntroCutscene() : base()
 	{
 		zLayer = Z_LAYER_OVERLAY;
 		s.isCutsceneCount++;
+
+		tw.to(1)->with(&mText, 1);
 	}
 
 	void onRemove() override {
 		s.isCutsceneCount--;
-		gFlux.to(2)->with(&s.healthVisible, 1)->ease(flux::EASE_BACKOUT);
-		gWorld.add(new PhaseOne);
+		gWorld.add(new TutorialPhase);
 	}
 
 	void update() override {
-		if (IsKeyPressed(KEY_Z))
+		base::update();
+
+		if (mFadeOut == 0)
 		{
 			remove();
+		}
+
+		if (IsKeyPressed(KEY_Z))
+		{
+			if (mText < 1)
+			{
+
+			}
+			else if (mDialog < 3)
+			{
+				mDialog++;
+				PlaySound(SND_MENU);
+			}
+			else if (mFadeOut == 1)
+			{
+				tw.to(1)->with(&mFadeOut, 0);
+				PlaySound(SND_START);
+			}
+		}
+
+		if (mDialog >= 2)
+		{
+			mBridge = Clamp(mBridge + DELTA);
 		}
 	}
 
 	void render() override {
-		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(BLACK, 0.5));
+		DrawRectangle(0, 0, SCRWID, SCRHEI, Fade(BLACK, mFadeOut));
+		
+		if (mFadeOut == 1)
+		{
+			DrawTexture(gTex.bridge, 0, 0, Fade(WHITE, mBridge));
+			rlPushMatrix();
+			rlTranslatef(SCRWID / 2, SCRHEI / 2, 0);
+			rlRotatef(GetTime() * -30, 0, 0, 1);
+
+			DrawTexture(gTex.sheep_circle, -200, -200, Fade(WHITE, mText));
+
+			rlPopMatrix();
+
+			DrawTexture(gTex.bridge_over, 0, 0, Fade(WHITE, mBridge));
+			DrawRectangle(0, SCRHEI / 2, SCRWID, SCRHEI / 2, BLACK);
+
+			switch (mDialog)
+			{
+			case 0:
+				DrawCutsceneCaption("The sheep are jumping...", mText);
+				break;
+			case 1:
+				DrawCutsceneCaption("Wait...", mText);
+				break;
+			case 2:
+				DrawCutsceneCaption("Someone led them to the bridge.", mText);
+				break;
+			case 3:
+				DrawCutsceneCaption("SIGHH. Time to get herding.", mText);
+				break;
+			}
+		}
 	}
 };
 
@@ -515,7 +917,10 @@ bool TrijamRunGame() {
 		ClearBackground( BLACK );
 
 		// Arena
-		DrawRectangleLines(ARENA_START_X, 0, ARENA_WID, SCRHEI, RED);
+		//DrawRectangleLines(ARENA_START_X, 0, ARENA_WID, SCRHEI, RED);
+		DrawTexture(gTex.bg2, 0, 0, WHITE);
+		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, 400) - SCRHEI, WHITE);
+		DrawTexture(gTex.bg1, ARENA_START_X, fmod(GetTime() * 200, 400), WHITE);
 
 		gWorld.render();
 

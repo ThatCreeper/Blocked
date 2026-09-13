@@ -3,21 +3,20 @@
 #define TEXTURES \
 	T(frozen, "frozen.png") \
 	T(baselut, "baselut.png") \
-	S(house) \
-	S(fire1) \
-	S(fire2) \
-	S(spot) \
-	S(spot_wings) \
-	S(inside) \
-	S(glass_shards) \
-	S(mushrooms) \
-	S(potion_room) \
-	S(soap) \
-	S(chocolate) \
-	S(potion) \
-	S(spotroom) \
-	S(hitler) \
-	S(baby)
+	S(sheep_circle) \
+	S(bridge) \
+	S(bridge_over) \
+	S(cs1_1) \
+	S(cs_1_2) \
+	S(cs1_3) \
+	S(cs1_4) \
+	S(cs1_5) \
+	S(cs1_6) \
+	S(cs1_7) \
+	S(evil) \
+	S(cs2) \
+	S(bg1) \
+	S(bg2)
 struct Textures
 {
 #define T(a, b) Texture2D a;
